@@ -6693,6 +6693,239 @@ Understanding these conditions is crucial for:
 - Debugging deadlock situations
 - Optimizing resource allocation
         `
+      },
+      {
+        id: 'deadlock-management',
+        title: 'Deadlock Management Strategies',
+        icon: Shield,
+        content: `
+## Deadlock Management
+
+**Deadlock Management** refers to the set of strategies an operating system uses to handle deadlocks. These strategies aim to either prevent deadlocks from occurring, or to detect them and recover the system if they do occur.
+
+### Four Main Approaches
+
+## 1. Deadlock Prevention
+
+**Goal:** Make deadlocks structurally impossible
+
+**Strategy:**
+- Ensure that at least ONE of the four necessary Coffman conditions can NEVER happen
+- By preventing one condition, deadlock becomes impossible
+
+**Methods:**
+- Eliminate Mutual Exclusion (make resources shareable)
+- Eliminate Hold and Wait (request all resources at once)
+- Eliminate No Preemption (allow resource preemption)
+- Eliminate Circular Wait (impose resource ordering)
+
+**Characteristics:**
+- Most stringent method
+- Guarantees no deadlocks
+- May reduce system efficiency and resource utilization
+- Conservative approach - prevents situations that *might* lead to deadlock
+
+**Trade-offs:**
+- ✅ No deadlock possible
+- ❌ Lower resource utilization
+- ❌ May be impractical for some resource types
+- ❌ Can reduce system concurrency
+
+## 2. Deadlock Avoidance
+
+**Goal:** Dynamically avoid entering unsafe states
+
+**Strategy:**
+- OS uses an algorithm to avoid entering states that *could* lead to deadlock
+- Requires advance information about resource needs
+- System must remain in a "safe state"
+
+**Key Concepts:**
+
+**Safe State:**
+- A state where there exists at least one execution sequence for all processes that won't result in deadlock
+- System can allocate resources to each process in some order and still avoid deadlock
+
+**Unsafe State:**
+- Doesn't guarantee deadlock, but deadlock is possible
+- No guaranteed safe execution sequence exists
+
+**Famous Algorithm:**
+- **Banker's Algorithm:** Most well-known deadlock avoidance method
+- Simulates resource allocation before actually granting it
+- Only grants if system remains in safe state
+
+**Requirements:**
+- Maximum resource needs must be known in advance
+- Number of available resources must be fixed
+- Processes must return resources in finite time
+
+**Characteristics:**
+- Less restrictive than prevention
+- Allows more concurrency than prevention
+- Requires advance resource information
+- Runtime overhead for safety checks
+
+**Trade-offs:**
+- ✅ Allows more flexibility than prevention
+- ✅ No deadlock if properly implemented
+- ❌ Requires knowing maximum resource needs ahead
+- ❌ Runtime overhead for calculations
+- ❌ May deny requests even when resources are available
+
+## 3. Deadlock Detection and Recovery
+
+**Goal:** Allow deadlocks, detect them, then fix them
+
+**Two-Phase Approach:**
+
+### Detection Phase
+
+**Methods:**
+- Periodically check for deadlocks using algorithms
+- **Wait-For Graph:** Analyze process dependencies
+- **Resource Matrices:** Check resource allocation states
+
+**Detection Frequency:**
+- Can run detection algorithm periodically
+- Can trigger detection on specific events
+- Trade-off between overhead and response time
+
+### Recovery Phase
+
+Once detected, use one of several recovery methods:
+
+**A. Process Termination**
+
+*Option 1: Abort All Deadlocked Processes*
+- Simple but wasteful
+- Loses all work done by processes
+- Guaranteed to break deadlock
+
+*Option 2: Abort One at a Time*
+- Terminate processes one by one until deadlock breaks
+- Check after each termination if deadlock persists
+- Less wasteful but more overhead
+
+**Selection Criteria (Which process to terminate?):**
+- Priority of the process
+- Computation time completed vs remaining
+- Resources used and needed
+- Number of processes that would need termination
+- Interactive vs batch process
+
+**B. Resource Preemption**
+
+- Forcibly take resources from processes
+- Give preempted resources to other processes
+- May need to rollback the preempted process
+
+**Considerations:**
+- **Selecting a Victim:** Choose process to minimize cost
+- **Rollback:** Return process to safe previous state
+- **Starvation:** Same process shouldn't always be victim
+
+**C. Rollback**
+
+- Return deadlocked processes to previous safe state
+- Saved at checkpoints
+- Resume from checkpoint after deadlock resolved
+
+**Characteristics:**
+- Most flexible approach
+- Allows maximum resource utilization
+- Recovery has overhead and complexity
+
+**Trade-offs:**
+- ✅ Maximum resource utilization
+- ✅ Maximum concurrency
+- ✅ No restrictions on resource requests
+- ❌ Overhead of detection algorithm
+- ❌ Potential work lost during recovery
+- ❌ Complexity in implementation
+
+## 4. Ignoring Deadlocks (Ostrich Algorithm)
+
+**Philosophy:** "Stick your head in the sand and pretend there's no problem"
+
+**Strategy:**
+- Assume deadlocks occur very infrequently
+- Performance overhead of handling them isn't worthwhile
+- Let the user or operator deal with it
+
+**Rationale:**
+- Deadlocks may be so rare that prevention/detection costs exceed deadlock cost
+- Simpler systems, less overhead
+- Often cheaper to reboot than to implement complex deadlock handling
+
+**Used By:**
+- Many general-purpose operating systems
+- UNIX variants
+- Windows (for many resource types)
+
+**When Appropriate:**
+- Deadlocks are extremely rare
+- Cost of deadlock is low (e.g., can restart easily)
+- Prevention/detection overhead is high
+- System is not mission-critical
+
+**Characteristics:**
+- Simplest approach
+- No overhead
+- Relies on external intervention
+
+**Trade-offs:**
+- ✅ Zero overhead
+- ✅ Simplest to implement
+- ✅ No performance impact
+- ❌ Deadlocks can occur
+- ❌ Requires manual intervention (reboot)
+- ❌ Not suitable for critical systems
+
+### Comparison of Approaches
+
+| Approach | Deadlock Possible? | Resource Utilization | Overhead | Complexity |
+|----------|-------------------|---------------------|----------|------------|
+| Prevention | No | Low | Low | Medium |
+| Avoidance | No | Medium | Medium | High |
+| Detection & Recovery | Yes (temporarily) | High | Medium-High | High |
+| Ignore | Yes | Highest | None | Lowest |
+
+### Choosing the Right Strategy
+
+**Use Prevention when:**
+- System is simple
+- Resource types are limited
+- Predictable resource usage
+
+**Use Avoidance when:**
+- Can predict maximum resource needs
+- Need better utilization than prevention
+- Can afford runtime overhead
+
+**Use Detection & Recovery when:**
+- Deadlocks are rare
+- Need maximum resource utilization
+- Can tolerate temporary deadlocks
+
+**Use Ignore when:**
+- Deadlocks are extremely rare
+- System can easily recover (reboot)
+- Performance is critical
+- System is not mission-critical
+
+### Key Observations
+
+**No Perfect Solution:**
+- Each approach has trade-offs
+- Choice depends on system requirements
+- Many systems use hybrid approaches
+
+**Real Systems:**
+- Most modern OS use a combination
+- Critical resources: Prevention or Avoidance
+- Non-critical resources: Detection or Ignore
+        `
       }
     ]
   }
