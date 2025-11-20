@@ -6,7 +6,17 @@ import {
   HardDrive,
   Network,
   Terminal,
-  Zap
+  Zap,
+  AlertTriangle,
+  FileQuestion,
+  Shield,
+  AlertOctagon,
+  Search,
+  Activity,
+  GitBranch,
+  RotateCw,
+  TrendingDown,
+  Clock
 } from 'lucide-react';
 
 export const modules = [
@@ -6418,6 +6428,270 @@ Most systems use both push and pull migration for optimal balance.
 - Implement processor affinity to improve cache performance
 - Use both push and pull migration for load balancing
 - Consider process characteristics when assigning to processors
+        `
+      }
+    ]
+  },
+  {
+    id: 'deadlock',
+    title: 'Module 4: Deadlock',
+    icon: AlertTriangle,
+    color: 'red',
+    totalSections: 7,
+    description: 'Deadlock conditions, prevention, avoidance, detection, and recovery strategies - BCSE303L',
+    sections: [
+      {
+        id: 'deadlock-intro',
+        title: 'Deadlock Introduction & System Model',
+        icon: FileQuestion,
+        content: `
+## Deadlock Introduction
+
+### Definition
+
+A **deadlock** in an operating system is a situation where two or more processes are permanently blocked because each process is waiting for a resource that is held by another process in the same set.
+
+**Result:** All processes involved are stuck indefinitely, unable to proceed with their execution.
+
+### How Processes Consume Resources
+
+The lifecycle of resource consumption follows three distinct phases:
+
+**1. Request**
+- A process requests a resource
+- If the resource is available, the system grants it
+- If not available, the process enters a waiting state
+
+**2. Use**
+- The process utilizes the acquired resource
+- Performs necessary operations with the resource
+
+**3. Release**
+- The process releases the resource after use
+- The resource becomes available for other processes
+
+### Deadlock System Model
+
+**Resource-Allocation Graph (RAG):**
+Deadlocks are commonly modeled using a system resource-allocation graph - a directed graph with two types of nodes:
+
+**Node Types:**
+
+1. **Processes (P):** Represented by circles
+2. **Resources (R):** Represented by rectangles
+
+**Edge Types:**
+
+1. **Request Edge (Pi → Rj):**
+   - Directed edge from process Pi to resource Rj
+   - Indicates: Process Pi has requested resource Rj
+   - Process is currently waiting for this resource
+
+2. **Assignment Edge (Rj → Pi):**
+   - Directed edge from resource Rj to process Pi
+   - Indicates: An instance of resource Rj has been allocated to process Pi
+
+### Resource Instances
+
+**Within Resource Nodes:**
+- Each resource type node Rj contains dots
+- Each dot represents one instance of that resource type
+- An assignment edge originates from one dot, signifying one instance is assigned
+
+### Detecting Deadlock from Graph
+
+**Key Principle:** A system is in a deadlock state if and only if the resource-allocation graph contains a cycle.
+
+**Rules:**
+
+**No Cycle → No Deadlock:**
+- If the graph contains no cycles, no process is deadlocked
+- System is in a safe state
+
+**Cycle Present:**
+- **Single Instance Resources:** Cycle implies deadlock (guaranteed)
+- **Multiple Instance Resources:** Cycle indicates possibility of deadlock, but not guaranteed
+
+**Why Multiple Instances Are Different:**
+- Even with a cycle, if there are spare instances available, processes may still complete
+- Requires deeper analysis (like Banker's Algorithm) to determine actual deadlock
+
+### Example Scenario
+
+Consider three processes P1, P2, P3 and two resources R1, R2:
+
+\`\`\`
+P1 holds R1, requests R2
+P2 holds R2, requests R1
+→ Cycle exists: P1 → R2 → P2 → R1 → P1
+→ Deadlock! (assuming single instances)
+
+If R1 had 2 instances and one was free:
+→ Cycle exists but no deadlock
+→ Free instance can break the cycle
+\`\`\`
+
+### Key Observations
+
+**Critical Understanding:**
+- Deadlock is about **permanent waiting**
+- Processes cannot proceed without external intervention
+- Simply having processes wait doesn't mean deadlock
+- The circular dependency is what makes it permanent
+
+**Graph Analysis Benefits:**
+- Visual representation of resource dependencies
+- Easy detection of potential deadlocks
+- Helps in understanding system state
+- Foundation for deadlock detection algorithms
+        `
+      },
+      {
+        id: 'deadlock-conditions',
+        title: 'Four Deadlock Conditions',
+        icon: AlertOctagon,
+        content: `
+## Deadlock Conditions (Coffman Conditions)
+
+A deadlock in an operating system occurs when four specific conditions, often called the **Coffman conditions**, are **simultaneously present**.
+
+**Important:** ALL four conditions must hold at the same time for a deadlock to occur. If even one condition is prevented, deadlock cannot happen.
+
+### 1. Mutual Exclusion
+
+**Definition:** At least one resource must be non-shareable, meaning only one process can use it at any given time.
+
+**Characteristics:**
+- Resource can be held by only one process at a time
+- If another process requests that resource, it must wait
+- The resource is released only when the holding process finishes using it
+
+**Examples:**
+- Printer (only one process can print at a time)
+- Write access to a file (exclusive access required)
+- Tape drive
+- CPU in single-processor systems
+
+**Why It Matters:**
+Without mutual exclusion, processes could share resources freely, eliminating the possibility of one process waiting for another's resource.
+
+### 2. Hold and Wait
+
+**Definition:** A process is holding at least one resource and is simultaneously waiting to acquire additional resources that are currently held by other processes.
+
+**Scenario:**
+\`\`\`
+Process P1: Holds Resource A, Waiting for Resource B
+Process P2: Holds Resource B, Waiting for Resource C
+\`\`\`
+
+**Characteristics:**
+- Process has already acquired some resources
+- Process requests additional resources while holding current ones
+- Does not release held resources while waiting
+
+**Example:**
+A process has allocated memory and is waiting for I/O device to become available, but it won't release memory until I/O completes.
+
+**Why It Matters:**
+If processes had to release all held resources before requesting new ones, they couldn't create circular wait chains.
+
+### 3. No Preemption
+
+**Definition:** Resources cannot be forcibly taken away from a process. A resource can only be released voluntarily by the process that is holding it.
+
+**Characteristics:**
+- Once allocated, a resource stays with the process
+- No external force can take away the resource
+- Resource is released only when:
+  - Process completes its task
+  - Process voluntarily releases it
+
+**Examples:**
+- A process holding a printer cannot have it taken away mid-job
+- A process with allocated memory retains it until it explicitly frees it
+
+**Why It Matters:**
+If the OS could preempt resources (forcibly take them away), it could break deadlock cycles by reallocating resources.
+
+### 4. Circular Wait
+
+**Definition:** A set of processes are waiting for each other in a circular fashion, forming a closed chain.
+
+**Pattern:**
+\`\`\`
+P1 → waiting for resource held by P2
+P2 → waiting for resource held by P3
+P3 → waiting for resource held by P4
+...
+Pn → waiting for resource held by P1
+\`\`\`
+
+**Characteristics:**
+- Forms a closed cycle in the resource allocation graph
+- Each process in the cycle is waiting for the next
+- The last process waits for the first, completing the circle
+
+**Example:**
+\`\`\`
+Process P1: Holds R1, needs R2
+Process P2: Holds R2, needs R3
+Process P3: Holds R3, needs R1
+→ Circular dependency: P1 → P2 → P3 → P1
+\`\`\`
+
+**Why It Matters:**
+Without a circular wait, there would be at least one process that could complete and release its resources, allowing others to proceed.
+
+### Visual Representation
+
+**All Four Conditions Present:**
+
+\`\`\`
+Mutual Exclusion: Resources are non-shareable
+        ↓
+Hold and Wait: Processes hold and request more
+        ↓
+No Preemption: Cannot force release
+        ↓
+Circular Wait: Closed dependency cycle
+        ↓
+    DEADLOCK!
+\`\`\`
+
+### Breaking the Deadlock
+
+**Key Insight:** To prevent deadlock, we only need to ensure that AT LEAST ONE of these four conditions cannot hold.
+
+**Prevention Strategies:**
+- **Break Mutual Exclusion:** Make resources shareable (not always possible)
+- **Break Hold and Wait:** Require processes to request all resources at once
+- **Break No Preemption:** Allow OS to forcibly preempt resources
+- **Break Circular Wait:** Impose ordering on resource requests
+
+### Real-World Analogy
+
+**Traffic Intersection Deadlock:**
+- **Mutual Exclusion:** Only one car can occupy an intersection spot
+- **Hold and Wait:** Cars occupy their spots while waiting for others to move
+- **No Preemption:** Cars can't be forcibly removed from their spots
+- **Circular Wait:** Each car waits for the car in front to move, forming a circle
+
+**Solution:** Traffic lights break the "Hold and Wait" condition by controlling when cars enter the intersection!
+
+### Key Observations
+
+**Necessary but Not Sufficient:**
+- These four conditions are **necessary** for deadlock
+- Meaning: Deadlock cannot occur without all four
+- However, all four being present doesn't **guarantee** deadlock in all cases (e.g., with multiple resource instances)
+
+**Practical Importance:**
+Understanding these conditions is crucial for:
+- Designing deadlock-free systems
+- Implementing prevention strategies
+- Debugging deadlock situations
+- Optimizing resource allocation
         `
       }
     ]
