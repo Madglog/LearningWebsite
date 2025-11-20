@@ -8462,13 +8462,13 @@ This structure extends the two-level directory into a hierarchy where directorie
 - Starts from root directory (/)
 - Complete path from top to file
 - Unambiguous reference
-- Example: `/home/user1/documents/report.pdf`
+- Example: /home/user1/documents/report.pdf
 
 **Relative Path:**
 - Starts from current directory
 - Path relative to current location
 - More convenient for nearby files
-- Example: `documents/report.pdf` (from `/home/user1`)
+- Example: documents/report.pdf (from /home/user1)
 
 #### Advantages
 
@@ -9002,6 +9002,669 @@ hash(filename) = (sum of ASCII values) % table_size
 - Most use advanced structures
 - Optimize for common cases
 - Balance multiple factors
+        `
+      },
+      {
+        id: 'file-allocation-contiguous',
+        title: 'Contiguous File Allocation',
+        icon: Layers,
+        content: `
+## File Allocation Methods
+
+File allocation methods determine how an operating system allocates disk blocks for files. The three main methods are **contiguous**, **linked**, and **indexed** allocation.
+
+## Contiguous Allocation
+
+### Concept
+
+In contiguous allocation, each file occupies a set of **adjacent, contiguous blocks** on the disk.
+
+**Key Characteristic:** All file blocks are physically next to each other on disk.
+
+### How It Works
+
+**Storage Requirements:**
+- Directory entry stores only two pieces of information:
+  1. **Starting block address**
+  2. **Total length** (number of blocks)
+
+**Access Method:**
+- Calculate exact block address from starting address and logical position
+- Direct computation for any block
+- No need to traverse multiple pointers
+
+**Example:**
+\`\`\`
+File "report.pdf" - 5 blocks
+Starting block: 100
+Blocks used: 100, 101, 102, 103, 104
+
+To access byte at logical position 3.5 blocks:
+Physical block = 100 + 3 = Block 103
+\`\`\`
+
+### Visual Representation
+
+\`\`\`
+Disk Blocks:
+[... | 98 | 99 | 100:File A | 101:File A | 102:File A | 103 | 104 | ...]
+           Start=100, Length=3
+
+Directory Entry:
+File A: Start=100, Length=3
+\`\`\`
+
+### Advantages
+
+✅ **Excellent Performance:**
+- **Sequential Access:** Minimal disk head movement
+- **Random Access:** Direct calculation to any block
+- Both access patterns very efficient
+- Blocks physically close together
+
+✅ **Simple to Implement:**
+- Only store start and length
+- Easy address calculation
+- Minimal metadata overhead
+- Straightforward algorithms
+
+✅ **Fast Access:**
+- No pointer chasing
+- Direct block access
+- Minimal overhead
+- Optimal for read performance
+
+### Disadvantages
+
+❌ **External Fragmentation:**
+- Free space becomes broken into small chunks over time
+- Difficult to find contiguous space for new files
+- May have enough total space but not contiguous
+- Requires periodic compaction
+
+**Fragmentation Example:**
+\`\`\`
+Initial: [File A | File B | File C | File D]
+Delete B: [File A | FREE | File C | File D]
+Delete D: [File A | FREE | File C | FREE]
+
+New file needs 3 blocks but only 2 contiguous slots available
+Even though total free space = 4 blocks!
+\`\`\`
+
+❌ **File Growth Problem:**
+- Files cannot easily grow
+- May run into next file immediately
+- Must know maximum size in advance
+- Or reserve extra space (wasteful)
+
+**Growth Solutions (all problematic):**
+
+**Pre-allocation:**
+- Reserve extra space when creating file
+- Wastes space if file doesn't grow
+- Still limited by pre-allocated amount
+
+**Relocation:**
+- Find larger contiguous space
+- Copy entire file to new location
+- Very expensive operation
+- Temporary double space needed
+
+**Linked Extents:**
+- File split into multiple contiguous chunks
+- Loses pure contiguous advantages
+- Becomes hybrid approach
+
+❌ **Space Wastage:**
+- Internal fragmentation (last block not fully used)
+- Pre-allocated but unused space
+- Reserved growth space
+
+### Use Cases
+
+**Best For:**
+- **Read-only files** (CD-ROMs, DVDs)
+- **Known size files** (multimedia files)
+- **Sequential access workloads**
+- **Performance-critical applications**
+
+**Examples:**
+- ISO images
+- Video files
+- Database files (if size known)
+- Embedded systems with static content
+
+### Real-World Implementation
+
+**Extent-Based Systems:**
+Modern file systems use **extents** (modified contiguous allocation):
+- File stored in small number of large contiguous chunks
+- Each chunk (extent) is contiguous
+- File can have multiple extents
+- Balances benefits and limitations
+
+**Examples:**
+- ext4 (Linux)
+- XFS
+- NTFS (Windows) uses runs (similar to extents)
+
+### Performance Characteristics
+
+**Access Time:**
+- Sequential: Excellent (minimal seeking)
+- Random: Excellent (direct calculation)
+- Overall: Best among all methods
+
+**Space Efficiency:**
+- External fragmentation reduces efficiency over time
+- Need defragmentation
+- Pre-allocation wastes space
+
+**Complexity:**
+- Low implementation complexity
+- Simple data structures
+- Easy to understand
+
+### Key Observations
+
+**Historical Significance:**
+- Early file systems used this
+- Simple and effective initially
+- Fragmentation became major issue
+
+**Modern Usage:**
+- Pure contiguous rare today
+- Extent-based systems common
+- Hybrid approaches popular
+
+**Trade-off:**
+- Excellent performance vs. flexibility
+- Simple implementation vs. fragmentation issues
+        `
+      },
+      {
+        id: 'file-allocation-linked',
+        title: 'Linked File Allocation',
+        icon: GitBranch,
+        content: `
+## Linked Allocation
+
+### Concept
+
+This method stores each file as a **linked list of disk blocks**, which can be scattered anywhere on the disk.
+
+**Key Characteristic:** Blocks connected by pointers, can be anywhere on disk.
+
+### How It Works
+
+**Block Structure:**
+- Each block contains:
+  1. File data
+  2. Pointer to next block
+
+**Directory Entry:**
+- Stores only the **starting block address**
+- No length needed
+- Traverse pointers to reach end
+
+**File Traversal:**
+- Follow pointers from one block to next
+- Last block has null pointer
+- Sequential chain through file
+
+**Example:**
+\`\`\`
+File starts at block 5
+Block 5: [Data | → 14]
+Block 14: [Data | → 3]
+Block 3: [Data | → 27]
+Block 27: [Data | → NULL]
+
+Directory: File A → Block 5
+\`\`\`
+
+### Visual Representation
+
+\`\`\`
+Disk (blocks scattered):
+Block 5: [File Data | ptr→14]
+Block 14: [File Data | ptr→3]
+Block 3: [File Data | ptr→27]
+Block 27: [File Data | NULL]
+
+Directory:
+File A: Start=5
+\`\`\`
+
+### Advantages
+
+✅ **No External Fragmentation:**
+- Any free block can be used
+- No need for contiguous space
+- Fragmented free space not a problem
+- Eliminates compaction need
+
+✅ **Easy File Growth:**
+- Files grow dynamically
+- Just allocate any free block
+- Link to chain
+- No size limit (as long as blocks available)
+
+✅ **Simple Space Management:**
+- Free block list is straightforward
+- Any block can satisfy request
+- No searching for contiguous space
+- Flexible allocation
+
+### Disadvantages
+
+❌ **Poor Random Access:**
+- To access block N, must traverse from beginning
+- Follow N-1 pointers
+- O(n) access time
+- Very slow for random access
+
+**Example:**
+\`\`\`
+To read block 1000 of a file:
+Must traverse blocks 1, 2, 3, ..., 999 first!
+1000 disk accesses just to find the block
+Then one more to read it
+\`\`\`
+
+❌ **Space Overhead:**
+- Each block reserves space for pointer
+- Reduces usable data space per block
+- Example: 512-byte block, 4-byte pointer = 508 bytes data
+- Overhead accumulates across all blocks
+
+❌ **Reliability Issues:**
+- If one pointer damaged or lost:
+  - Rest of file becomes inaccessible
+  - Chain is broken
+  - Data loss beyond break point
+
+**Pointer Loss Example:**
+\`\`\`
+Block 5 → Block 14 → Block 3 → Block 27
+
+If pointer in Block 14 corrupted:
+Can access Block 5 and 14
+Blocks 3 and 27 are lost!
+\`\`\`
+
+❌ **Sequential Access Performance:**
+- Not optimal due to scattered blocks
+- Lots of disk seeking
+- Worse than contiguous
+- Unpredictable access patterns
+
+### File Allocation Table (FAT)
+
+**Improved Linked Allocation**
+
+#### Concept
+
+Take all pointers from blocks and store them in a separate table at the beginning of the disk.
+
+**Structure:**
+\`\`\`
+FAT (in memory):
+Index | Next Block
+------|----------
+  5   |    14
+ 14   |     3
+  3   |    27
+ 27   |   NULL
+...
+\`\`\`
+
+**Benefits:**
+1. **Improved Random Access:**
+   - FAT kept in memory
+   - Follow pointers in RAM (fast!)
+   - Only one disk access for target block
+   - Much better than pure linked
+
+2. **Full Block for Data:**
+   - No pointer in data blocks
+   - All block space for data
+   - No overhead per block
+
+3. **Easier Reliability:**
+   - FAT can be duplicated/backed up
+   - Easier to recover from corruption
+   - Centralized pointer storage
+
+**Used By:**
+- MS-DOS file system
+- Early Windows systems
+- USB drives (FAT32)
+- SD cards
+
+### Comparison: Linked vs FAT
+
+| Feature | Pure Linked | FAT |
+|---------|------------|-----|
+| Random Access | Very Poor | Better |
+| Data per Block | Reduced | Full |
+| Pointer Storage | Each block | Centralized table |
+| Memory Usage | Low | FAT in memory |
+| Reliability | Poor | Better |
+
+### Use Cases
+
+**Best For:**
+- **Sequential access only** workloads
+- **Write-once files** (logs, archives)
+- **Growing files** (unknown final size)
+- **Simple systems** (embedded)
+
+**Not Good For:**
+- Databases (random access needed)
+- Frequently accessed files
+- Large files with random access
+
+### Performance Characteristics
+
+**Access Time:**
+- Sequential: Poor (scattered blocks, seeking)
+- Random: Very Poor (must traverse chain)
+- FAT variant: Better random access
+
+**Space Efficiency:**
+- No external fragmentation (excellent)
+- Pointer overhead (small cost)
+- Can use any free block
+
+**Complexity:**
+- Simple linked list implementation
+- FAT adds complexity but improves performance
+
+### Key Observations
+
+**Trade-off:**
+- Eliminates fragmentation
+- But sacrifices random access performance
+
+**Historical Use:**
+- Very common in early systems
+- FAT still used on removable media
+- Mostly superseded by better methods
+
+**Modern Relevance:**
+- FAT still on USB/SD cards (compatibility)
+- Pure linked allocation rare
+- Influenced modern designs
+        `
+      },
+      {
+        id: 'file-allocation-indexed',
+        title: 'Indexed File Allocation',
+        icon: List,
+        content: `
+## Indexed Allocation
+
+### Concept
+
+Brings all pointers for a file's blocks together into a single location called an **index block**.
+
+**Key Idea:** Index block is like a table of contents for the file.
+
+### How It Works
+
+**Structure:**
+- Each file has its own **index block**
+- Index block is an array of disk block addresses
+- The ith entry points to the ith block of the file
+- Directory entry contains address of index block
+
+**Example:**
+\`\`\`
+Index Block (Block 19):
+[0] → 9
+[1] → 16
+[2] → 1
+[3] → 10
+[4] → 25
+
+Directory Entry:
+File A: Index Block = 19
+
+File data in blocks: 9, 16, 1, 10, 25
+\`\`\`
+
+### Visual Representation
+
+\`\`\`
+Directory: File A → Index Block 19
+
+Index Block 19:
+┌───┬────┐
+│ 0 │  9 │ → Block 9: [File Data]
+├───┼────┤
+│ 1 │ 16 │ → Block 16: [File Data]
+├───┼────┤
+│ 2 │  1 │ → Block 1: [File Data]
+├───┼────┤
+│ 3 │ 10 │ → Block 10: [File Data]
+└───┴────┘
+\`\`\`
+
+### Advantages
+
+✅ **Direct Random Access:**
+- Access any block without traversal
+- Look up index[N] to find block N
+- One extra disk read (for index block)
+- Much better than linked allocation
+
+✅ **No External Fragmentation:**
+- Blocks can be anywhere on disk
+- Any free block usable
+- Like linked allocation benefit
+
+✅ **Dynamic File Growth:**
+- Files can grow (within index size)
+- Just add entry to index block
+- No pre-allocation needed
+
+### Disadvantages
+
+❌ **Space Overhead:**
+- Index block needed for every file
+- Wasteful for small files
+
+**Example:**
+\`\`\`
+Small file (1 block of data):
+- Needs 1 block for data
+- Needs 1 block for index
+- 50% overhead!
+
+Large file (1000 blocks of data):
+- Needs 1000 blocks for data
+- Needs 1-2 blocks for index
+- <1% overhead
+\`\`\`
+
+❌ **Size Limitations:**
+- Index block has fixed size
+- Limits maximum file size
+- Need solutions for very large files
+
+**Size Limit Example:**
+\`\`\`
+Block size: 512 bytes
+Pointer size: 4 bytes
+Pointers per block: 512/4 = 128
+
+Maximum file size: 128 blocks
+If 512-byte blocks: 128 × 512 = 64 KB max file!
+\`\`\`
+
+### Solutions for Large Files
+
+## 1. Linked Index Blocks
+
+**Concept:** Last entry in index block points to another index block.
+
+\`\`\`
+Index Block 1:
+[0] → Data Block 5
+[1] → Data Block 12
+...
+[127] → Index Block 2 (next index)
+
+Index Block 2:
+[0] → Data Block 33
+[1] → Data Block 41
+...
+\`\`\`
+
+**Characteristics:**
+- Extends file size
+- Loses direct access for later blocks
+- Must follow chain of index blocks
+
+## 2. Multi-Level Index
+
+**Concept:** Index block points to other index blocks (like page tables).
+
+**Single-Level:**
+\`\`\`
+Index → Data blocks
+\`\`\`
+
+**Two-Level:**
+\`\`\`
+Master Index → Index Blocks → Data Blocks
+\`\`\`
+
+**Three-Level:**
+\`\`\`
+Master → Secondary Indexes → Index Blocks → Data Blocks
+\`\`\`
+
+**Example Calculation (two-level):**
+\`\`\`
+Block size: 4 KB
+Pointer size: 4 bytes
+Pointers per block: 1024
+
+Single-level max: 1024 blocks = 4 MB
+Two-level max: 1024 × 1024 blocks = 4 GB!
+\`\`\`
+
+## 3. Combined Scheme (UNIX inode)
+
+**Most Practical Solution**
+
+**Structure:**
+- First 12 pointers: Direct blocks (direct data access)
+- 13th pointer: Single indirect block
+- 14th pointer: Double indirect block
+- 15th pointer: Triple indirect block
+
+\`\`\`
+inode:
+[0-11]  → Direct data blocks (12 blocks)
+[12]    → Single indirect (→ 1024 blocks)
+[13]    → Double indirect (→ 1024² blocks)
+[14]    → Triple indirect (→ 1024³ blocks)
+\`\`\`
+
+**Benefits:**
+- **Small files:** Very fast (direct blocks)
+- **Medium files:** Reasonable (single indirect)
+- **Large files:** Possible (double/triple indirect)
+- **Optimized for common case** (most files are small)
+
+**Performance:**
+- Small file (< 12 blocks): 1 access (direct)
+- Medium file: 2 accesses (1 indirect + data)
+- Large file: 3+ accesses (multiple indirect + data)
+
+### Comparison: Access Methods
+
+| Method | Sequential | Random | Implementation | Best For |
+|--------|-----------|--------|----------------|----------|
+| Contiguous | Excellent | Excellent | Simple | Known size, performance |
+| Linked | Poor | Very Poor | Simple | Sequential only |
+| Indexed | Good | Good | Complex | General purpose |
+| Combined | Excellent* | Excellent* | Complex | Modern systems |
+
+*Excellent for small files, good for large files
+
+### Real-World Usage
+
+**UNIX/Linux (ext2, ext3, ext4):**
+- Use inode structure
+- Combined direct/indirect scheme
+- Optimized for small files
+
+**NTFS (Windows):**
+- Master File Table (MFT)
+- Similar to indexed with extents
+- Sophisticated allocation
+
+**Modern Trends:**
+- Extent-based allocation
+- Hybrid approaches
+- B-tree indexing
+
+### Performance Characteristics
+
+**Access Time:**
+- Small files: Excellent (direct)
+- Large files: Good (indirect overhead)
+- Random access: Good (better than linked)
+
+**Space Efficiency:**
+- Overhead for index blocks
+- Proportionally better for large files
+- Combined scheme optimizes small files
+
+**Complexity:**
+- More complex than contiguous/linked
+- Worth it for flexibility
+- Industry standard approach
+
+### Key Observations
+
+**Best of Both Worlds:**
+- Combines benefits of contiguous (random access)
+- With benefits of linked (no fragmentation)
+
+**Scalability:**
+- Multi-level indexing handles any file size
+- Graceful degradation for large files
+
+**Optimization:**
+- Combined schemes optimize for common case
+- Most files are small - keep them fast
+- Large files still supported
+
+## Summary: Choosing Allocation Method
+
+**Contiguous:**
+- Use when: Performance critical, size known, read-only
+- Examples: Multimedia files, databases with pre-allocated space
+
+**Linked:**
+- Use when: Sequential access only, simple systems
+- Examples: Log files, write-once archives
+
+**Indexed:**
+- Use when: General purpose, mixed workloads
+- Examples: Modern file systems, variable-size files
+
+**Modern Choice:**
+- Most systems use variations of indexed
+- Combined direct/indirect (UNIX inode)
+- Extent-based optimizations
+- Best balance of performance and flexibility
         `
       }
     ]
