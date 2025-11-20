@@ -2426,6 +2426,2338 @@ Resume Interrupted Task
 - For shortest time possible
 - Can cause system unresponsiveness
         `
+      },
+      {
+        id: 'process-intro',
+        title: 'Process - Introduction',
+        icon: Cpu,
+        content: `
+A process is essentially a program that's actively running. It is the foundation for all the computations that happen on your computer and represents a unit of work that the OS manages.
+
+### What is a Process?
+
+A process is an **active instance of a program** that includes:
+- The program's machine code
+- Its current activity (what it's doing right now)
+- Resources allocated to it by the OS, such as:
+  - Memory
+  - CPU time
+  - Open files
+
+### Program vs Process
+
+It's important to distinguish between a program and a process:
+
+**Program:**
+- A passive entity
+- Executable file stored on disk
+- Static set of instructions
+- Can exist indefinitely without executing
+
+**Process:**
+- An active entity
+- Program in execution
+- Dynamic with changing state
+- Has a defined lifetime
+- Consumes system resources
+
+**Example:**
+- A web browser executable (chrome.exe) on your disk is a **program**
+- When you double-click and run it, it becomes a **process**
+- You can have multiple processes from the same program (multiple browser windows)
+
+### Process Characteristics
+
+**Unique Identity:**
+- Each process has a unique **Process ID (PID)**
+- The OS uses PIDs to track and manage processes
+- PIDs are typically sequential numbers
+
+**Isolation:**
+- Each process runs in its own address space
+- Cannot directly access memory of other processes
+- Provides security and stability
+
+**Resource Ownership:**
+- Memory allocation
+- Open file handles
+- Network connections
+- CPU time slices
+
+**State Information:**
+- Current execution state
+- Program counter (next instruction)
+- CPU register values
+- Stack pointer
+
+### Why Processes Matter
+
+**Multitasking:**
+- Multiple processes can run concurrently
+- OS switches between them rapidly
+- Gives illusion of simultaneous execution
+- Improves system utilization
+
+**Protection:**
+- Process isolation prevents one program from crashing others
+- Security boundaries between applications
+- Controlled resource access
+
+**Resource Management:**
+- OS can allocate resources fairly
+- Priority-based scheduling
+- CPU time distribution
+- Memory management
+
+### Process Hierarchy
+
+**Parent-Child Relationships:**
+- Processes can create other processes
+- Creating process is the **parent**
+- Created process is the **child**
+- Forms a tree structure
+
+**Example Hierarchy:**
+\`\`\`
+init (PID 1)
+  ├─ systemd-logind
+  ├─ bash
+  │   ├─ ls
+  │   └─ grep
+  └─ chrome
+      ├─ chrome (renderer)
+      └─ chrome (GPU process)
+\`\`\`
+
+### Process Management by OS
+
+The operating system is responsible for:
+
+**Creation:**
+- Allocate memory
+- Load program code
+- Initialize Process Control Block (PCB)
+- Assign PID
+
+**Scheduling:**
+- Decide which process runs when
+- Allocate CPU time
+- Handle context switches
+
+**Termination:**
+- Free allocated memory
+- Close open files
+- Remove from process table
+- Return resources to system
+
+**Inter-Process Communication (IPC):**
+- Pipes
+- Message queues
+- Shared memory
+- Sockets
+        `
+      },
+      {
+        id: 'process-memory',
+        title: 'Process Memory Layout',
+        icon: HardDrive,
+        content: `
+When the operating system loads a program to run it (creating a process), it organizes the process's memory into a logical, standardized structure called the **process address space**.
+
+### Virtual Address Space
+
+A process in an operating system has its own **virtual address space**, separate from other processes. This virtual space is typically divided into distinct regions:
+
+### Memory Segments
+
+### 1. Text Section (Code Segment)
+
+**Purpose:** Contains the compiled machine code of the program
+
+**Characteristics:**
+- Contains executable instructions
+- **Read-only** - marked so the process cannot accidentally modify its own instructions
+- **Fixed size** - determined at compile time
+- **Shareable** - multiple processes can share the same text section (e.g., shared libraries)
+
+**Example:**
+Your program's compiled functions and logic reside here.
+
+### 2. Data Section
+
+**Purpose:** Contains global and static variables
+
+**Two Sub-sections:**
+
+**Initialized Data Segment:**
+- Contains global and static variables that are initialized by the programmer
+- Example: \`int max_users = 100;\`
+- Values known at compile time
+
+**BSS (Block Started by Symbol):**
+- Contains uninitialized global and static variables
+- Example: \`static int counter;\`
+- Automatically initialized to zero
+- Named .bss in executables
+
+**Characteristics:**
+- **Fixed size** - known at compile time
+- **Writable** - values can be modified during execution
+
+### 3. Heap
+
+**Purpose:** Dynamic memory allocation area
+
+**Characteristics:**
+- Used when program needs more memory at runtime
+- Grows **upward** toward higher memory addresses
+- Memory allocated using:
+  - \`malloc()\` in C
+  - \`new\` operator in C++
+  - \`allocate\` in other languages
+- Programmer responsible for:
+  - Allocating memory
+  - Deallocating memory (preventing memory leaks)
+- **Size varies** during execution
+
+**Example:**
+\`\`\`c
+char *buffer = malloc(1024);  // Allocates 1KB on heap
+// Use the buffer
+free(buffer);  // Must free when done
+\`\`\`
+
+**Heap Growth:**
+- Starts at end of data/BSS segment
+- Grows toward higher addresses
+- Can grow very large (within system limits)
+
+### 4. Stack
+
+**Purpose:** Static, local memory allocation
+
+**What It Stores:**
+- **Local variables** - variables declared within functions
+- **Function parameters** - arguments passed to functions
+- **Return addresses** - where to return after function completes
+- **Saved registers** - CPU state during function calls
+
+**Stack Frames:**
+- Every function call creates a **stack frame**
+- Frame contains function's local context
+- Frame is **pushed** onto stack when function is called
+- Frame is **popped** off stack when function returns
+
+**Characteristics:**
+- Located at **top of address space**
+- Grows **downward** toward lower memory addresses
+- **LIFO** (Last In, First Out) structure
+- **Automatic management** - OS handles push/pop
+- **Limited size** - stack overflow if too deep recursion
+
+**Example:**
+\`\`\`c
+void function() {
+    int local_var = 20;  // Stored on stack
+    char buffer[100];     // Stored on stack
+}  // Stack frame popped when function returns
+\`\`\`
+
+### Memory Layout Visualization
+
+\`\`\`
+High Memory Addresses
+┌─────────────────────────┐
+│   Command Line Args     │
+│   Environment Variables │
+├─────────────────────────┤
+│                         │
+│        STACK            │ ← Grows downward
+│          ↓              │
+├─────────────────────────┤
+│                         │
+│    (Free Space)         │
+│                         │
+├─────────────────────────┤
+│          ↑              │
+│         HEAP            │ ← Grows upward
+│                         │
+├─────────────────────────┤
+│    BSS Segment          │ (Uninitialized Data)
+├─────────────────────────┤
+│    Data Segment         │ (Initialized Data)
+├─────────────────────────┤
+│    Text Segment         │ (Code)
+└─────────────────────────┘
+Low Memory Addresses
+\`\`\`
+
+### Memory Layout Example
+
+Consider this C program:
+\`\`\`c
+#include <stdio.h>
+#include <stdlib.h>
+
+int global_var = 10;              // Data segment
+
+void my_function() {
+    int local_var = 20;          // Stack
+    char *ptr = malloc(10);      // ptr on stack, allocated memory on heap
+
+    printf("Global: %d\\n", global_var);
+    printf("Local: %d\\n", local_var);
+
+    free(ptr);
+}
+
+int main() {
+    my_function();               // main() stack frame
+    return 0;
+}
+\`\`\`
+
+**Memory Allocation:**
+
+1. **Text Section:**
+   - Compiled machine code of \`my_function()\` and \`main()\`
+
+2. **Data Section:**
+   - \`global_var = 10\` (initialized)
+
+3. **Stack:**
+   - \`main()\` stack frame
+   - \`my_function()\` stack frame with:
+     - \`local_var = 20\`
+     - \`ptr\` (pointer variable itself)
+     - Return address
+
+4. **Heap:**
+   - 10 bytes allocated by \`malloc(10)\`
+   - \`ptr\` points to this location
+
+### Virtual to Physical Address Translation
+
+**Memory Management Unit (MMU):**
+- Translates virtual addresses used by process
+- Converts to physical memory addresses
+- Provides memory protection
+- Enables memory virtualization
+
+**Benefits:**
+- Each process thinks it has full memory
+- Isolation between processes
+- Physical memory can be anywhere
+- Enables memory protection
+        `
+      },
+      {
+        id: 'process-pcb',
+        title: 'Process Control Block (PCB)',
+        icon: BookOpen,
+        content: `
+The Process Control Block (PCB) is a data structure containing all the information about a process. Each process is represented in the operating system by its PCB, also called a **task control block**.
+
+### What is a PCB?
+
+The PCB acts as the **handle** for the OS to manage:
+- The process's memory layout
+- Scheduling information
+- Resource allocation
+- Process state
+
+It contains pointers to the process's memory regions and serves as the complete descriptor of a process.
+
+### PCB Components
+
+### 1. Process Identification
+
+**Process ID (PID):**
+- Unique identifier for the process
+- Used by OS to track the process
+- Typically a sequential number
+
+**Parent Process ID (PPID):**
+- PID of the parent process
+- Establishes process hierarchy
+
+**User ID (UID):**
+- Identifies process owner
+- Used for access control
+
+### 2. Process State
+
+**Current State:**
+The state may be:
+- **New** - Process being created
+- **Ready** - Waiting for CPU allocation
+- **Running** - Instructions being executed
+- **Waiting** - Waiting for I/O or event
+- **Terminated** - Finished execution
+
+### 3. Program Counter (PC)
+
+**Purpose:**
+- Indicates the **address of the next instruction** to be executed for that process
+- Critical for resuming execution after context switch
+
+**Context Switching:**
+- Saved when process is preempted
+- Restored when process resumes
+- Ensures execution continues from correct point
+
+### 4. CPU Registers
+
+**Contents:**
+The registers vary in number and type depending on computer architecture:
+- **Accumulators** - store computation results
+- **Index registers** - array indexing
+- **Stack pointers** - top of stack location
+- **General-purpose registers** - temporary storage
+- **Condition-code information** - flags (zero, carry, overflow)
+
+**Importance:**
+- All register values must be saved when interrupt occurs
+- Must be restored when process is rescheduled
+- Allows process to continue correctly afterward
+
+### 5. CPU Scheduling Information
+
+**Contents:**
+- **Process priority** - importance level
+- **Pointers to scheduling queues** - ready queue, waiting queue
+- **Scheduling parameters** - time quantum, deadlines
+- **CPU time used** - for accounting
+
+**Used For:**
+- Determining which process runs next
+- Fair allocation of CPU time
+- Priority-based scheduling
+
+### 6. Memory Management Information
+
+**Contains:**
+- **Base and limit registers** - define memory boundaries
+- **Page tables** - virtual to physical address mapping
+- **Segment tables** - for segmented memory
+- Depends on memory system used by OS
+
+**Purpose:**
+- Define process address space
+- Enable virtual memory
+- Enforce memory protection
+
+### 7. Accounting Information
+
+**Tracks:**
+- **CPU time used** - total processor time consumed
+- **Real time used** - wall-clock time
+- **Time limits** - maximum allowed time
+- **Account numbers** - billing information
+- **Job or process numbers** - batch system identifiers
+
+**Used For:**
+- Resource usage tracking
+- Billing and quotas
+- Performance analysis
+- Statistics gathering
+
+### 8. I/O Status Information
+
+**Includes:**
+- **List of I/O devices** allocated to the process
+- **List of open files** - file descriptors
+- **I/O requests** - pending operations
+- **Status of I/O operations** - completion, errors
+
+**Purpose:**
+- Track resource usage
+- Manage I/O operations
+- Clean up on process termination
+
+### 9. Heap and Stack Memory Limits
+
+**Stack Limits:**
+- Bottom of stack
+- Top of stack (stack pointer)
+- Maximum stack size
+
+**Heap Limits:**
+- Start of heap
+- Current heap break (brk pointer)
+- Maximum heap size
+
+### 10. List of Open Files
+
+**File Descriptors:**
+- Standard input (stdin) - fd 0
+- Standard output (stdout) - fd 1
+- Standard error (stderr) - fd 2
+- Other open files
+
+**Information:**
+- File positions
+- Access modes
+- File locks
+
+### 11. Security and Permissions
+
+**Credentials:**
+- Real UID/GID
+- Effective UID/GID
+- Saved UID/GID
+- Supplementary groups
+
+**Used For:**
+- Access control decisions
+- Permission checking
+- Security enforcement
+
+### PCB Structure Example
+
+\`\`\`
+┌──────────────────────────────────┐
+│   Process Control Block (PCB)    │
+├──────────────────────────────────┤
+│  Process ID: 1234                │
+│  Parent ID: 1000                 │
+│  User ID: 501                    │
+├──────────────────────────────────┤
+│  Process State: READY            │
+├──────────────────────────────────┤
+│  Program Counter: 0x08048500     │
+├──────────────────────────────────┤
+│  CPU Registers:                  │
+│    EAX: 0x00000005               │
+│    EBX: 0x00000000               │
+│    ESP: 0xBFFFFA00 (Stack Ptr)   │
+│    ...                           │
+├──────────────────────────────────┤
+│  Priority: 20                    │
+│  CPU Time: 150ms                 │
+├──────────────────────────────────┤
+│  Memory Limits:                  │
+│    Text: 0x08048000-0x0804A000   │
+│    Data: 0x0804A000-0x0804C000   │
+│    Heap: 0x0804C000-0x08050000   │
+│    Stack: 0xBFFFF000-0xC0000000  │
+├──────────────────────────────────┤
+│  Open Files:                     │
+│    fd 0: /dev/stdin              │
+│    fd 1: /dev/stdout             │
+│    fd 3: /var/log/app.log        │
+├──────────────────────────────────┤
+│  Pointers:                       │
+│    → Next PCB in ready queue     │
+│    → Parent PCB                  │
+│    → Child PCB list              │
+└──────────────────────────────────┘
+\`\`\`
+
+### PCB Usage in Context Switching
+
+**When Context Switch Occurs:**
+
+1. **Save Current Process:**
+   - Copy CPU registers to PCB
+   - Save program counter
+   - Update process state
+   - Save stack pointer
+
+2. **Select Next Process:**
+   - Scheduler chooses from ready queue
+   - Retrieves PCB of selected process
+
+3. **Load New Process:**
+   - Restore CPU registers from PCB
+   - Load program counter
+   - Set up memory management (page tables)
+   - Switch to new process's stack
+
+4. **Resume Execution:**
+   - CPU continues from saved program counter
+   - Process runs as if never interrupted
+
+### Importance of PCB
+
+**Critical for:**
+- **Multitasking** - switching between processes
+- **Resource Management** - tracking allocations
+- **Scheduling** - deciding which process runs
+- **Protection** - enforcing security boundaries
+- **Accounting** - tracking resource usage
+
+Without the PCB, the OS would have no way to manage multiple processes effectively.
+        `
+      },
+      {
+        id: 'process-states',
+        title: 'Process Tables and Process States',
+        icon: Layers,
+        content: `
+As a process executes, it changes state. The state of a process is defined in part by the current activity of that process.
+
+### Process Table
+
+**Definition:**
+A data structure maintained by the operating system to store information about all active processes.
+
+**Structure:**
+- A table or array of Process Control Blocks (PCBs)
+- Each entry represents a process
+- Contains a pointer to the corresponding PCB
+
+**Purpose:**
+- Quick lookup of process information
+- Efficient process management
+- System-wide view of all processes
+
+### Process States
+
+A process may be in one of the following states:
+
+### 1. New State
+
+**Description:** The process is being created
+
+**Activities:**
+- PCB is allocated
+- Process ID assigned
+- Memory space being allocated
+- Initial resources being gathered
+- Not yet ready to execute
+
+**Transition:**
+- **New → Ready:** When creation is complete and process is loaded into memory
+
+### 2. Ready State
+
+**Description:** The process is waiting to be assigned to a processor
+
+**Characteristics:**
+- Process is **loaded in memory**
+- Has all necessary resources except CPU
+- In the **ready queue**
+- Can execute when scheduled
+- May be multiple processes in this state
+
+**Transition:**
+- **Ready → Running:** When scheduler selects this process
+- **Running → Ready:** When time quantum expires (preemption)
+
+### 3. Running State
+
+**Description:** Instructions are being executed
+
+**Characteristics:**
+- Process has **CPU allocated**
+- Actually executing on processor
+- **One process per CPU core** can be running
+- Active execution of instructions
+
+**Transitions:**
+- **Running → Ready:** Time slice expires, higher priority process arrives
+- **Running → Waiting:** Process requests I/O or waits for event
+- **Running → Terminated:** Process completes execution
+
+### 4. Waiting State (Blocked)
+
+**Description:** The process is waiting for some event to occur
+
+**Waiting For:**
+- **I/O completion** - disk read, network packet
+- **Event signal** - message from another process
+- **Resource availability** - semaphore, lock
+- **User input** - keyboard, mouse
+
+**Characteristics:**
+- **Cannot execute** even if CPU is free
+- In a **waiting queue**
+- Specific to the event being awaited
+- Multiple waiting queues for different events
+
+**Transition:**
+- **Waiting → Ready:** When the waited-for event occurs
+
+### 5. Terminated State
+
+**Description:** The process has finished execution
+
+**Activities:**
+- Exit status set
+- Resources being deallocated
+- Memory freed
+- Open files closed
+- PCB will be removed
+
+**Reasons for Termination:**
+- **Normal exit:** Process completed successfully
+- **Error exit:** Process encountered error
+- **Fatal error:** Division by zero, segmentation fault
+- **Killed:** Terminated by another process or user
+
+### State Transition Diagram
+
+\`\`\`
+     NEW
+      ↓
+   [Admitted]
+      ↓
+    READY ←──────────────┐
+      ↓                  │
+ [Scheduler Dispatch]    │
+      ↓                  │
+   RUNNING              │
+      ↓                  │
+   ┌──┴──┐              │
+   │     │              │
+[I/O or  │         [Interrupt/
+Event    │          Time Quantum
+Wait]    │          Expired]
+   │     │              │
+   ↓     │              │
+WAITING  │              │
+   │     │              │
+[I/O or  │              │
+Event    │              │
+Complete]│              │
+   │     └──────────────┘
+   │
+   ↓ [Exit]
+TERMINATED
+\`\`\`
+
+### State Transitions Explained
+
+**1. New → Ready (Admission)**
+- Process creation completed
+- Loaded into memory
+- Resources allocated
+- Added to ready queue
+
+**2. Ready → Running (Dispatch)**
+- Scheduler selects this process
+- CPU allocated
+- Context loaded
+- Execution begins
+
+**3. Running → Ready (Preemption)**
+- **Time quantum expired:** Round-robin scheduling
+- **Higher priority process:** Preemptive scheduling
+- **Interrupt occurred:** External event
+
+**4. Running → Waiting (Block)**
+- **I/O Request:** Reading file, network operation
+- **Event Wait:** Waiting for signal, message
+- **Resource Wait:** Lock, semaphore unavailable
+
+**5. Waiting → Ready (Wakeup)**
+- **I/O Completed:** Data available
+- **Event Occurred:** Signal received
+- **Resource Available:** Lock released
+
+**6. Running → Terminated (Exit)**
+- **Normal completion:** return 0
+- **Error exit:** return non-zero
+- **Abnormal termination:** Signal, exception
+- **Killed:** By user or system
+
+### Scheduling Queues
+
+**Job Queue:**
+- All processes in the system
+- Includes all states
+
+**Ready Queue:**
+- Processes in Ready state
+- Waiting for CPU
+- Typically implemented as linked list
+
+**Device/Wait Queues:**
+- Processes in Waiting state
+- Separate queue for each device/event
+- Examples:
+  - Disk I/O queue
+  - Network wait queue
+  - Timer queue
+
+### Queue Example
+
+\`\`\`
+Ready Queue:
+[P1] → [P3] → [P5] → [P7]
+
+Disk I/O Queue:
+[P2] → [P4]
+
+Network Wait Queue:
+[P6]
+\`\`\`
+
+### Process State in PCB
+
+The PCB stores the current state:
+\`\`\`c
+enum process_state {
+    NEW,
+    READY,
+    RUNNING,
+    WAITING,
+    TERMINATED
+};
+
+struct PCB {
+    int pid;
+    enum process_state state;
+    // ... other fields
+};
+\`\`\`
+
+### State Management by OS
+
+**OS Responsibilities:**
+
+**State Tracking:**
+- Maintain current state of each process
+- Update PCB when state changes
+- Move PCB between queues
+
+**Queue Management:**
+- Add processes to appropriate queues
+- Remove processes when state changes
+- Maintain queue ordering (priority, FIFO, etc.)
+
+**State Transitions:**
+- Enforce valid transitions
+- Update bookkeeping information
+- Notify scheduler of changes
+
+### Importance of Process States
+
+**Efficient Resource Utilization:**
+- CPU given to Ready processes
+- Waiting processes don't waste CPU
+- Clear separation of concerns
+
+**Scheduling Decisions:**
+- Only Ready processes are candidates
+- Priorities within Ready queue
+- Fair allocation of CPU time
+
+**System Organization:**
+- Clear structure for process management
+- Well-defined behaviors
+- Predictable system operation
+        `
+      },
+      {
+        id: 'process-creation',
+        title: 'Process Creation and Execution',
+        icon: Zap,
+        content: `
+Process creation allows the system to generate new processes, enabling multitasking, resource sharing, and efficient program execution.
+
+### Process Creation Basics
+
+**What Happens:**
+Process creation typically occurs when an existing process (**parent**) spawns a new one (**child**), forming a hierarchical tree structure.
+
+**Hierarchy Structure:**
+\`\`\`
+Parent Process
+    ↓ [spawns]
+Child Process
+    ↓ [spawns]
+Child's Child Process
+\`\`\`
+
+**Benefits of Hierarchy:**
+- Helps manage dependencies
+- Enables resource sharing
+- Facilitates process management
+- Supports cleanup operations
+
+### OS Role in Process Creation
+
+**The Operating System Oversees:**
+
+**1. Resource Allocation:**
+- Memory for process
+- CPU time slices
+- I/O devices access
+- File handles
+
+**2. Process Tracking:**
+- Assign unique **Process Identifier (PID)**
+- Create **Process Control Block (PCB)**
+- Track process state
+- Store program counter and registers
+
+### Resource Allocation Options
+
+When a child process is created, it needs resources to execute.
+
+**Option 1: Direct from OS**
+- Child obtains resources directly from the operating system
+- Independent resource allocation
+- No dependency on parent's resources
+
+**Option 2: Inherit from Parent**
+- Child inherits a **subset of resources** from parent
+- Resources are limited
+- Parent may need to partition its resources among children
+- Prevents resource overuse
+
+### Address Space Options
+
+When a new (child) process is created, there are two possibilities for its address space:
+
+### Option 1: Duplicate Address Space
+
+**Characteristics:**
+- Child process has the **same program and data** as parent
+- Exact copy at creation time
+- Child gets duplicate of parent's memory
+- Both continue from same point initially
+
+**Use Case:**
+- UNIX \`fork()\` system call
+- Child can then replace its image with \`exec()\`
+
+**Example:**
+\`\`\`c
+pid_t pid = fork();
+// At this point, both parent and child have identical memory
+\`\`\`
+
+### Option 2: New Address Space
+
+**Characteristics:**
+- Child process has a **new program** loaded
+- Own separate address space
+- Different executable
+- Independent from parent
+
+**Use Case:**
+- Windows \`CreateProcess()\`
+- Direct creation with specific program
+
+### Process Execution Options
+
+After process creation, regarding execution:
+
+### Option 1: Parent Runs Concurrently
+
+**Characteristics:**
+- Parent continues executing
+- Child executes simultaneously
+- True parallelism (on multi-core systems)
+- Both progress independently
+
+**Use Case:**
+- Web server handling multiple requests
+- Each child handles one connection
+
+### Option 2: Parent Waits
+
+**Characteristics:**
+- Parent **waits** for child to complete
+- Parent blocks until child terminates
+- Sequential execution
+- Parent resumes after child exits
+
+**Use Case:**
+- Shell executing commands
+- Compilation pipelines
+
+### Unix-like Systems: fork(), exec(), wait(), exit()
+
+### 1. fork() System Call
+
+**Purpose:** Create a child process
+
+**Behavior:**
+- Creates **exact duplicate** of parent process
+- Child gets copy of parent's memory and state
+- Both processes continue execution from fork() point
+
+**Return Values:**
+- Returns **0 to the child** process
+- Returns **child's PID to the parent**
+- This difference allows them to execute different code
+
+**Example:**
+\`\`\`c
+pid_t pid = fork();
+
+if (pid == 0) {
+    // Child process code
+    printf("I am the child\\n");
+} else if (pid > 0) {
+    // Parent process code
+    printf("I am the parent, child PID: %d\\n", pid);
+} else {
+    // Error occurred
+    perror("fork failed");
+}
+\`\`\`
+
+### 2. exec() System Call Family
+
+**Purpose:** Replace process image with new program
+
+**Behavior:**
+- Loads and runs a different executable
+- Replaces current process's memory
+- Does **not** create new process
+- PID remains the same
+
+**Variants:**
+- \`execl()\`, \`execv()\` - different argument passing
+- \`execlp()\`, \`execvp()\` - search PATH
+- \`execle()\`, \`execve()\` - custom environment
+
+**Example:**
+\`\`\`c
+pid_t pid = fork();
+
+if (pid == 0) {
+    // Child replaces itself with /bin/ls
+    execl("/bin/ls", "ls", "-l", NULL);
+    // If exec succeeds, this line never executes
+    perror("exec failed");
+    exit(1);
+}
+\`\`\`
+
+### 3. wait() System Call
+
+**Purpose:** Parent waits for child termination
+
+**Behavior:**
+- Parent calls \`wait()\` or \`waitpid()\`
+- Parent **suspends execution**
+- Waits until child terminates
+- Collects child's exit status
+- Prevents zombie processes
+
+**Example:**
+\`\`\`c
+pid_t pid = fork();
+
+if (pid == 0) {
+    // Child code
+    printf("Child running\\n");
+    sleep(2);
+    exit(42);  // Exit with status 42
+} else {
+    // Parent waits for child
+    int status;
+    wait(&status);
+    printf("Child exited with status: %d\\n", WEXITSTATUS(status));
+}
+\`\`\`
+
+### 4. exit() System Call
+
+**Purpose:** Terminate the process
+
+**Behavior:**
+- Terminates process execution
+- Passes exit status to parent
+- Releases resources
+- Decrements process count
+- Closes open files
+
+**Exit Status:**
+- 0 typically means success
+- Non-zero indicates error
+
+**Example:**
+\`\`\`c
+if (error_condition) {
+    fprintf(stderr, "Error occurred\\n");
+    exit(1);  // Exit with error code
+}
+
+// Normal completion
+exit(0);  // Success
+\`\`\`
+
+### Complete Fork/Exec/Wait Example
+
+\`\`\`c
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main() {
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("Fork failed");
+        return 1;
+    }
+
+    if (pid == 0) {
+        // Child process
+        printf("Child: Executing ls command\\n");
+        execl("/bin/ls", "ls", "-l", NULL);
+        perror("Exec failed");  // Only if exec fails
+        exit(1);
+    } else {
+        // Parent process
+        printf("Parent: Waiting for child (PID: %d)\\n", pid);
+        int status;
+        waitpid(pid, &status, 0);
+
+        if (WIFEXITED(status)) {
+            printf("Parent: Child exited with status %d\\n",
+                   WEXITSTATUS(status));
+        }
+    }
+
+    return 0;
+}
+\`\`\`
+
+### Windows Systems: CreateProcess()
+
+**Purpose:** Create new process and load program
+
+**Characteristics:**
+- Combines creation and program loading
+- Single system call
+- More parameters than fork/exec
+- Initializes memory and loads executable
+
+**Differences from Unix:**
+- No duplication of parent memory
+- Direct program specification
+- More complex parameter structure
+- Different process model
+
+### Other Creation Methods
+
+**vfork():**
+- Variation of fork()
+- Child shares parent's memory until exec()
+- More efficient for immediate exec()
+- Deprecated in favor of fork()
+
+**posix_spawn():**
+- POSIX standard
+- Combines fork() and exec() operations
+- Attribute-specified creation
+- More portable
+
+### Process Creation Summary
+
+**Key Steps:**
+1. Allocate new PID
+2. Create PCB
+3. Allocate memory
+4. Set up address space
+5. Initialize registers
+6. Add to ready queue
+
+**Common Patterns:**
+- **Fork + Exec:** Unix model - duplicate then replace
+- **CreateProcess:** Windows model - create with program
+- **Wait:** Synchronize parent and child
+- **Exit:** Clean termination
+        `
+      },
+      {
+        id: 'zombie-orphan',
+        title: 'Zombie and Orphan Processes',
+        icon: Lock,
+        content: `
+Special process states can occur when parent-child process relationships are not properly managed. Two important cases are zombie processes and orphan processes.
+
+### Zombie Processes
+
+**Definition:**
+A zombie process occurs when a child process completes execution (calls \`exit()\`) but remains in the process table because the parent hasn't called \`wait()\` to collect its exit status.
+
+**Characteristics:**
+- Child is "dead" but not fully removed
+- Still holds a PID
+- Holds minimal resources (just PCB entry)
+- Shows as <defunct> or (Z) in process list
+- Cannot be killed with \`kill\` command
+
+**Why Zombies Exist:**
+- OS preserves exit status for parent
+- Parent may need exit code
+- Allows parent to query child's status
+- Part of process lifecycle design
+
+**Example Scenario:**
+\`\`\`c
+pid_t pid = fork();
+
+if (pid == 0) {
+    // Child code
+    printf("Child finishing\\n");
+    exit(0);  // Child exits
+}
+
+// Parent continues without wait()
+printf("Parent continuing without wait\\n");
+sleep(100);  // Child becomes zombie here
+\`\`\`
+
+**In Process Table:**
+\`\`\`
+$ ps aux | grep defunct
+user  1234  0.0  0.0     0    0  ?  Z  10:00  0:00  [child] <defunct>
+\`\`\`
+
+**Problem with Zombies:**
+- Occupy PID slot
+- If many zombies accumulate, can exhaust PID space
+- Indicate poor program design
+- Cannot be removed until parent acts
+
+**Resolution:**
+
+**Method 1: Parent Calls wait()**
+\`\`\`c
+pid_t pid = fork();
+
+if (pid == 0) {
+    exit(0);  // Child exits
+} else {
+    wait(NULL);  // Parent collects status - zombie removed
+}
+\`\`\`
+
+**Method 2: Parent Terminates**
+- If parent exits, zombie becomes orphan
+- Adopted by init (PID 1)
+- init automatically reaps zombie
+
+**Method 3: Signal Handler**
+\`\`\`c
+#include <signal.h>
+
+void handle_sigchld(int sig) {
+    while (waitpid(-1, NULL, WNOHANG) > 0);  // Reap all zombies
+}
+
+signal(SIGCHLD, handle_sigchld);  // Set up handler
+\`\`\`
+
+### Orphan Processes
+
+**Definition:**
+An orphan process is a running child process whose parent terminates before it does, leaving the child without a parent.
+
+**Characteristics:**
+- Child is still **running**
+- Parent no longer exists
+- Child continues execution
+- Not a problem like zombies
+
+**Example Scenario:**
+\`\`\`c
+pid_t pid = fork();
+
+if (pid == 0) {
+    // Child sleeps for long time
+    sleep(100);
+    printf("Child still running\\n");
+    exit(0);
+} else {
+    // Parent exits immediately
+    printf("Parent exiting\\n");
+    exit(0);  // Child becomes orphan
+}
+\`\`\`
+
+**What Happens:**
+- Kernel automatically re-parents orphan to **init process** (PID 1)
+- init becomes the new parent
+- When orphan terminates, init handles cleanup
+- Prevents zombie accumulation
+
+**Visual Representation:**
+\`\`\`
+Before Parent Exit:
+Parent (PID 100)
+    └─ Child (PID 200)
+
+After Parent Exit:
+init (PID 1)
+    └─ Child (PID 200)  [orphan, now child of init]
+\`\`\`
+
+**Process Tree Example:**
+\`\`\`
+$ pstree -p
+init(1)
+  ├─ orphaned_child(200)
+  └─ other_processes...
+\`\`\`
+
+**Resolution:**
+- **Automatic:** Kernel handles re-parenting
+- **init Process:** Waits on all adopted children
+- **Clean Termination:** init reaps exit status
+- No user intervention needed
+
+### Comparison: Zombie vs Orphan
+
+| Aspect | Zombie Process | Orphan Process |
+|--------|---------------|----------------|
+| **State** | Terminated (dead) | Still running |
+| **Parent** | Parent exists but not waiting | Parent terminated |
+| **Problem** | Yes - consumes PID | No - handled by kernel |
+| **Resources** | Minimal (PCB only) | Full (running process) |
+| **In ps** | Shows as <defunct> | Shows as normal process |
+| **Parent** | Original parent | init (PID 1) |
+| **Resolution** | Parent must wait() | Automatic re-parenting |
+| **Can be killed** | No (already dead) | Yes (SIGTERM, SIGKILL) |
+
+### Demonstration Example
+
+**Zombie Creation:**
+\`\`\`c
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+int main() {
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        printf("Child (PID %d) exiting\\n", getpid());
+        exit(0);  // Child exits, becomes zombie
+    } else {
+        printf("Parent (PID %d) not calling wait()\\n", getpid());
+        printf("Child %d is now a zombie\\n", pid);
+        sleep(30);  // Parent sleeps - child stays zombie
+        // If we add wait() here, zombie is reaped
+    }
+    return 0;
+}
+\`\`\`
+
+**Orphan Creation:**
+\`\`\`c
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+int main() {
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        sleep(2);  // Wait for parent to exit
+        printf("Child (PID %d) now orphan, parent is PID %d\\n",
+               getpid(), getppid());  // PPID should be 1 (init)
+        sleep(10);
+        exit(0);
+    } else {
+        printf("Parent (PID %d) exiting immediately\\n", getpid());
+        exit(0);  // Parent exits, child becomes orphan
+    }
+    return 0;
+}
+\`\`\`
+
+### Best Practices
+
+**Preventing Zombies:**
+1. **Always call wait()** after fork() when appropriate
+2. **Use SIGCHLD handler** for asynchronous reaping
+3. **Double fork** technique for daemon processes
+4. **Check return values** of all system calls
+
+**Example: Proper Cleanup**
+\`\`\`c
+pid_t pid = fork();
+
+if (pid == 0) {
+    // Child work
+    exit(0);
+} else if (pid > 0) {
+    int status;
+    waitpid(pid, &status, 0);  // Proper cleanup
+    if (WIFEXITED(status)) {
+        printf("Child exited: %d\\n", WEXITSTATUS(status));
+    }
+}
+\`\`\`
+
+**Daemon Process (Intentional Orphan):**
+\`\`\`c
+// Double fork to create daemon
+pid_t pid = fork();
+if (pid > 0) exit(0);  // Parent exits
+
+// Child continues
+pid = fork();  // Second fork
+if (pid > 0) exit(0);  // First child exits
+
+// Grandchild is now orphan (daemon)
+// Adopted by init, runs independently
+setsid();  // Create new session
+// Daemon code here...
+\`\`\`
+
+### Checking for Zombies
+
+**Command Line:**
+\`\`\`bash
+# Find zombie processes
+ps aux | grep Z
+
+# Count zombies
+ps aux | awk '$8=="Z" {print $0}' | wc -l
+
+# Detailed zombie info
+ps -eo pid,ppid,stat,cmd | grep Z
+\`\`\`
+
+### Summary
+
+**Zombie Process:**
+- Dead but not reaped
+- Parent must call wait()
+- Problematic if accumulated
+- Shows poor process management
+
+**Orphan Process:**
+- Running without parent
+- Automatically handled by init
+- Not a problem
+- Normal for daemons
+
+Both situations are part of the process lifecycle and must be understood for proper system programming.
+        `
+      },
+      {
+        id: 'threads-intro',
+        title: 'Threads - Introduction',
+        icon: Layers,
+        content: `
+A thread is the smallest unit of execution within a process, representing a sequence of programmed instructions that the operating system can manage independently.
+
+### What is a Thread?
+
+**Definition:**
+A thread operates in the context of a process, sharing the process's resources like memory and open files, but each thread has its own stack, program counter, and registers.
+
+**Key Characteristics:**
+- Threads are often called **lightweight processes**
+- Enable concurrency without the overhead of creating separate processes
+- Multiple threads can execute within a single process
+- Share the same address space
+
+**Example:**
+In a web browser, a single process might run multiple threads:
+- One thread for rendering the user interface
+- Another for handling network requests
+- A third for executing JavaScript
+- This allows the browser to remain responsive while performing background tasks
+
+### Process vs Thread
+
+A process is an executing program that can contain one or more threads, forming a container for threads to run concurrently.
+
+**Process:**
+- Heavyweight
+- Own address space
+- Own resources
+- Independent execution
+- Expensive creation/destruction
+- Expensive context switch
+- Isolated from other processes
+
+**Thread:**
+- Lightweight
+- Shared address space (within process)
+- Shared resources
+- Part of a process
+- Cheap creation/destruction
+- Cheap context switch
+- Can communicate easily with other threads
+
+### Components Shared by All Threads
+
+All threads within a process share:
+
+**1. Code Section:**
+- Executable instructions
+- Program text
+- Functions and logic
+
+**2. Data Section:**
+- Global variables
+- Static variables
+- Heap memory
+
+**3. Open Files:**
+- File descriptors
+- File handles
+- I/O resources
+
+**4. Signals:**
+- Signal handlers
+- Signal masks
+
+**5. Process Resources:**
+- Process ID (PID)
+- Working directory
+- User and group IDs
+
+### Components Unique to Each Thread
+
+Each thread has its own:
+
+**1. Thread ID:**
+- Unique identifier within the process
+- Used for thread management
+
+**2. Program Counter (PC):**
+- Points to next instruction for this thread
+- Allows independent execution flow
+
+**3. Register Set:**
+- CPU registers for this thread
+- Saved during context switch
+
+**4. Stack:**
+- Local variables
+- Function call history
+- Return addresses
+- Stack pointer
+
+**5. Thread-Local Storage:**
+- Variables specific to thread
+- Not shared with other threads
+
+### Thread Visualization
+
+\`\`\`
+┌─────────────────────────────────────┐
+│          Process                     │
+│                                     │
+│  ┌──────────────────────────────┐  │
+│  │   Code Section               │  │ ← Shared
+│  └──────────────────────────────┘  │
+│  ┌──────────────────────────────┐  │
+│  │   Data Section               │  │ ← Shared
+│  └──────────────────────────────┘  │
+│  ┌──────────────────────────────┐  │
+│  │   Open Files                 │  │ ← Shared
+│  └──────────────────────────────┘  │
+│                                     │
+│  Thread 1     Thread 2    Thread 3 │
+│  ┌─────┐      ┌─────┐     ┌─────┐ │
+│  │ TID │      │ TID │     │ TID │ │ ← Unique
+│  │ PC  │      │ PC  │     │ PC  │ │ ← Unique
+│  │Regs │      │Regs │     │Regs │ │ ← Unique
+│  │Stack│      │Stack│     │Stack│ │ ← Unique
+│  └─────┘      └─────┘     └─────┘ │
+└─────────────────────────────────────┘
+\`\`\`
+
+### Single-Threaded vs Multi-Threaded
+
+### Single-Threaded Process
+
+**Characteristics:**
+- Only one thread runs at a time
+- Sequential execution
+- Tasks performed one after another
+- Cannot utilize multiple CPU cores effectively
+
+**Execution:**
+- One instruction stream
+- One program counter
+- One stack
+
+**Limitations:**
+- Higher idle time during I/O waits
+- Less responsive
+- Cannot take advantage of parallelism
+- Blocking operations halt entire process
+
+**Example:**
+A single-threaded file downloader processes one file at a time, pausing if it encounters delays.
+
+### Multi-Threaded Process
+
+**Characteristics:**
+- Multiple threads run concurrently
+- Parallel task execution possible
+- Better resource utilization
+- Can utilize multiple CPU cores
+
+**Execution:**
+- Multiple instruction streams
+- Multiple program counters
+- Multiple stacks
+
+**Benefits:**
+- Minimal idle time
+- Better responsiveness
+- Improved performance
+- Background processing possible
+
+**Complexities:**
+- Requires synchronization
+- Potential race conditions
+- Shared data management
+- Debugging challenges
+
+**Example:**
+A multi-threaded web server handles multiple client requests simultaneously, each in its own thread.
+
+### Benefits of Multithreading
+
+### 1. Responsiveness
+- UI remains responsive during long operations
+- Background tasks don't block user interaction
+- Better user experience
+- Can continue execution even if part blocks
+
+**Example:**
+Text editor can respond to user input while spell-checking in background.
+
+### 2. Resource Sharing
+- Threads automatically share memory and resources
+- No need for complex shared memory mechanisms
+- Easier inter-thread communication
+- More efficient than inter-process communication
+
+### 3. Economy
+- Thread creation is cheaper than process creation
+- Context switching between threads is faster
+- Less memory overhead
+- More efficient resource utilization
+
+**Metrics:**
+- Thread creation: ~10-100x faster than process creation
+- Context switch: ~5-10x faster than process context switch
+
+### 4. Scalability
+- Can utilize multiple CPU cores
+- True parallelism on multicore systems
+- Better performance with more cores
+- Load distribution across processors
+
+**Example:**
+Video encoding can split work across multiple threads, one per CPU core.
+
+### Thread Use Cases
+
+**1. Server Applications:**
+- Web servers handling multiple requests
+- Database servers processing queries
+- Each connection handled by separate thread
+
+**2. GUI Applications:**
+- UI thread for responsiveness
+- Worker threads for computations
+- Background threads for I/O
+- Prevents interface freezing
+
+**3. Background Processing:**
+- Email clients checking mail
+- Anti-virus scanning
+- Auto-save in applications
+- System maintenance tasks
+
+**4. Parallel Computations:**
+- Scientific simulations
+- Data processing
+- Image/video rendering
+- Machine learning training
+
+### Thread States
+
+Similar to processes, threads have states:
+
+**Ready:**
+- Created and waiting for CPU
+- In ready queue
+
+**Running:**
+- Currently executing on CPU
+- One per core
+
+**Blocked:**
+- Waiting for resource
+- I/O operation
+- Synchronization
+
+**Terminated:**
+- Finished execution
+- Resources being cleaned up
+
+### Thread Challenges
+
+**1. Synchronization:**
+- Coordinating access to shared data
+- Preventing race conditions
+- Ensuring data consistency
+
+**2. Deadlock:**
+- Threads waiting for each other
+- Circular resource dependencies
+- System freeze
+
+**3. Debugging:**
+- Non-deterministic behavior
+- Race conditions hard to reproduce
+- Timing-dependent bugs
+
+**4. Data Consistency:**
+- Multiple threads modifying same data
+- Need for locks and semaphores
+- Performance trade-offs
+
+### Thread Libraries
+
+**POSIX Threads (pthreads):**
+- Standard for Unix/Linux
+- Portable across platforms
+- Rich API
+
+**Windows Threads:**
+- Native Windows API
+- CreateThread(), etc.
+
+**Java Threads:**
+- Built into language
+- Platform-independent
+- High-level abstraction
+
+**C++11 Threads:**
+- Standard library support
+- std::thread
+- Modern C++ approach
+        `
+      },
+      {
+        id: 'multithreading-models',
+        title: 'Multithreading Models',
+        icon: Network,
+        content: `
+Multithreading models define how user-level threads (managed by applications) map to kernel-level threads (managed by the operating system). These models balance concurrency, efficiency, and overhead.
+
+### User Threads vs Kernel Threads
+
+### User Threads
+
+**Managed by:** User-level libraries
+
+**Characteristics:**
+- Created and managed entirely within a user application
+- **Lightweight:** Context switching is faster (only user-level registers)
+- **No direct OS support:** Kernel is unaware of user threads
+- **Susceptible to blocking:** One blocked thread blocks entire process
+
+**Libraries:**
+- POSIX Pthreads (user-level implementation)
+- Java Green Threads (older versions)
+
+**Advantages:**
+- Fast to create and manage
+- No kernel involvement
+- Can have many threads
+- Platform-independent
+
+**Disadvantages:**
+- Cannot utilize multiple CPUs effectively
+- Blocking system call blocks all threads
+- No true parallelism
+
+### Kernel Threads
+
+**Managed by:** Operating system kernel
+
+**Characteristics:**
+- Created and managed by the kernel
+- **Heavier weight:** Context switching involves kernel-level state
+- **Direct OS support:** Kernel aware of and schedules them independently
+- **Resistant to blocking:** One blocked thread doesn't block others
+
+**Examples:**
+- Native Windows threads
+- Linux kernel threads
+
+**Advantages:**
+- Can utilize multiple processors
+- True parallelism
+- One thread blocking doesn't affect others
+- Better for I/O-bound applications
+
+**Disadvantages:**
+- Slower creation and context switching
+- Limited by kernel resources
+- More overhead
+
+### Multithreading Model Types
+
+## 1. Many-to-One Model
+
+**Mapping:** Multiple user threads → One kernel thread
+
+**How It Works:**
+- Thread library manages user threads in user space
+- All threads mapped to single kernel thread
+- No kernel involvement in thread management
+
+**Diagram:**
+\`\`\`
+User Space          Kernel Space
+┌─────────┐
+│ Thread 1│─┐
+├─────────┤ │
+│ Thread 2│─┼──────→  [Kernel Thread]
+├─────────┤ │
+│ Thread 3│─┘
+└─────────┘
+\`\`\`
+
+**Advantages:**
+- ✅ **Efficient:** Fast thread management in user space
+- ✅ **Low overhead:** No kernel involvement
+- ✅ **Portable:** Works on any OS
+- ✅ **Many threads:** Can create unlimited user threads
+
+**Disadvantages:**
+- ❌ **No parallelism:** Cannot use multiple CPUs
+- ❌ **Blocking:** One blocking call halts entire process
+- ❌ **Starvation:** CPU-bound thread can starve others
+
+**When a Problem Occurs:**
+- If one user thread makes a blocking system call
+- Kernel sees single kernel thread as blocked
+- Entire process blocks
+- All other user threads cannot execute
+
+**Best For:**
+- Lightweight, non-parallel applications
+- Simple threading needs
+- Systems without multicore support
+
+**Examples:**
+- Early Java Green Threads
+- Some user-level thread libraries
+
+## 2. One-to-One Model
+
+**Mapping:** One user thread → One kernel thread
+
+**How It Works:**
+- Each user thread gets dedicated kernel thread
+- Kernel manages all thread scheduling
+- Direct mapping provides full kernel support
+
+**Diagram:**
+\`\`\`
+User Space          Kernel Space
+┌─────────┐
+│ Thread 1│────────→ [Kernel Thread 1]
+├─────────┤
+│ Thread 2│────────→ [Kernel Thread 2]
+├─────────┤
+│ Thread 3│────────→ [Kernel Thread 3]
+└─────────┘
+\`\`\`
+
+**Advantages:**
+- ✅ **True concurrency:** Can use multiple CPUs
+- ✅ **Parallel execution:** Real parallelism on multiprocessors
+- ✅ **No blocking issues:** One thread blocks, others continue
+- ✅ **Better for I/O:** Independent scheduling
+
+**Disadvantages:**
+- ❌ **Overhead:** Creating user thread requires creating kernel thread
+- ❌ **Resource intensive:** Limited by kernel thread limits
+- ❌ **Performance cost:** Kernel involvement for all thread operations
+- ❌ **Scalability:** May limit number of threads
+
+**Characteristics:**
+- Each user thread independently scheduled
+- Blocking call affects only that thread
+- True parallelism on multicore systems
+
+**Best For:**
+- CPU-bound tasks needing concurrency
+- Applications requiring parallelism
+- Multicore systems
+
+**Examples:**
+- **Linux:** Native POSIX threads (NPTL)
+- **Windows:** Native threads API
+
+## 3. Many-to-Many Model
+
+**Mapping:** M user threads → N kernel threads (M ≥ N)
+
+**How It Works:**
+- Multiple user threads multiplexed onto smaller/equal number of kernel threads
+- Flexibility in mapping
+- Best of both worlds approach
+
+**Diagram:**
+\`\`\`
+User Space          Kernel Space
+┌─────────┐
+│ Thread 1│─┐
+├─────────┤ │
+│ Thread 2│─┼────→ [Kernel Thread 1]
+├─────────┤ │
+│ Thread 3│─┘  ┌→ [Kernel Thread 2]
+├─────────┤    │
+│ Thread 4│─┐  │
+├─────────┤ ├──┘
+│ Thread 5│─┘
+└─────────┘
+\`\`\`
+
+**Advantages:**
+- ✅ **Scalability:** Supports many threads efficiently
+- ✅ **Balanced:** Good performance without excessive overhead
+- ✅ **Flexible:** Developer can create many user threads
+- ✅ **Parallelism:** Supports parallel execution
+- ✅ **No blocking problems:** Multiple kernel threads available
+
+**Disadvantages:**
+- ❌ **Complexity:** Requires careful management of thread mapping
+- ❌ **Implementation:** Complex to implement correctly
+- ❌ **Debugging:** More difficult to debug
+
+**How It Works:**
+- Multiple user threads can continue execution even if one kernel thread is blocked
+- OS can schedule kernel threads independently
+- User-level scheduler multiplexes user threads onto kernel threads
+
+**Best For:**
+- Complex applications with variable workloads
+- Systems requiring both many threads and good performance
+- Server applications
+- Database systems
+
+**Examples:**
+- Older Solaris (prior to Solaris 9)
+- Some implementations of pthreads
+- Database servers managing numerous queries
+
+## 4. Two-Level Model
+
+**Variation of Many-to-Many:**
+- Similar to Many-to-Many
+- **Addition:** Allows specific user threads to be bound to specific kernel threads
+- Provides flexibility for critical threads
+
+**Use Case:**
+- Most threads use many-to-many multiplexing
+- Critical threads get dedicated kernel thread
+- Combines flexibility with performance
+
+### Comparison Table
+
+| Aspect | Many-to-One | One-to-One | Many-to-Many |
+|--------|-------------|------------|--------------|
+| **Mapping** | Multiple user → 1 kernel | 1 user → 1 kernel | M user → N kernel |
+| **Concurrency** | Limited, no true parallelism | High, supports parallel execution | Balanced, enables parallelism without overhead |
+| **Blocking** | One block halts process | Only blocking thread affected | Kernel schedules around blocks |
+| **Overhead** | Low, user-space management | High, kernel thread for each | Moderate, flexible allocation |
+| **Scalability** | High for simple tasks, poor on multicore | Limited by kernel limits | High, supports many threads efficiently |
+| **Performance** | Fast thread ops, no parallelism | Slower ops, true parallelism | Balanced |
+| **Best Use** | Lightweight, non-parallel apps | CPU-bound tasks, concurrency needed | Complex apps, variable workloads |
+| **Examples** | Green threads, early Java | Linux, Windows | Database servers, Solaris |
+
+### Advantages and Disadvantages Summary
+
+| Model | Advantage | Disadvantage |
+|-------|-----------|-------------|
+| **Many-to-One** | Efficiency, low overhead (no kernel) | Lack of multiprocessor support, process-wide blocking |
+| **One-to-One** | Strong concurrency, multiprocessor utilization | Performance burden from excessive kernel threads |
+| **Many-to-Many** | Scalability, balanced resource use | Added implementation complexity |
+
+### Modern Trends
+
+**Current Industry Practice:**
+- Most modern OSes use **One-to-One model**
+- Kernel thread implementations highly optimized
+- Hardware improvements reduce overhead
+- Simplicity outweighs performance costs
+
+**Why One-to-One Dominates:**
+- True parallelism essential for modern applications
+- Multicore processors ubiquitous
+- Kernel thread overhead acceptable
+- Simpler to implement and maintain
+
+**Examples:**
+- **Linux:** NPTL (Native POSIX Thread Library) uses one-to-one
+- **Windows:** Native threads are one-to-one
+- **Modern Java:** Uses OS-native threads (one-to-one)
+        `
+      },
+      {
+        id: 'multicore-programming',
+        title: 'Multicore Programming',
+        icon: Cpu,
+        content: `
+A multicore processor is a single physical processor that contains multiple processing cores. Each core can execute instructions independently, allowing for true simultaneous execution of multiple tasks.
+
+### What is a Multicore Processor?
+
+**Definition:**
+A multicore processor has multiple processing units (cores) on a single chip, each capable of independent execution.
+
+**Examples:**
+- Dual-core: 2 cores
+- Quad-core: 4 cores
+- Octa-core: 8 cores
+- Modern processors: 16, 32, or more cores
+
+**Benefits:**
+- Multiple tasks truly execute simultaneously
+- Better performance without increasing clock speed
+- More energy-efficient than faster single cores
+- Essential for modern computing demands
+
+### Parallel vs Concurrent Execution
+
+### Concurrent Execution
+
+**Definition:**
+The ability of a program to perform multiple tasks or threads simultaneously, but not necessarily at the same instant.
+
+**How It Works:**
+- Achieved through **context switching**
+- Processor switches between tasks quickly
+- **Time-slicing:** Each task gets small time slice
+- Gives illusion of simultaneity
+- Works on single-core systems
+
+**Example:**
+A single-core CPU running multiple applications by rapidly switching between them.
+
+**Characteristics:**
+- Interleaved execution
+- Tasks share CPU time
+- May run on single core
+- About dealing with many things at once
+
+### Parallel Execution
+
+**Definition:**
+The simultaneous execution of multiple tasks or threads on multiple processing cores.
+
+**How It Works:**
+- Multiple cores execute different tasks
+- **True simultaneity**
+- Each core runs independently
+- Requires multicore processor
+
+**Example:**
+A quad-core processor running four threads, each on its own core, all executing at the same time.
+
+**Characteristics:**
+- Simultaneous execution
+- Requires multiple cores
+- True parallelism
+- About doing many things at once
+
+### Visualization
+
+\`\`\`
+Concurrent Execution (Single Core):
+Time →
+Core 1: [T1][T2][T3][T1][T2][T3][T1]...
+
+Parallel Execution (Multi Core):
+Time →
+Core 1: [T1][T1][T1][T1][T1][T1][T1]...
+Core 2: [T2][T2][T2][T2][T2][T2][T2]...
+Core 3: [T3][T3][T3][T3][T3][T3][T3]...
+\`\`\`
+
+### Types of Parallelism
+
+## 1. Data Parallelism
+
+**Definition:**
+Focuses on distributing a large dataset across multiple processor cores and having each core perform the **same operation** on its subset of the data.
+
+**Concept:**
+- **One operation, many pieces of data**
+- Same task applied to different data
+- Divide data, not tasks
+- All cores run same code
+
+**Example:**
+Imagine you have a massive image and you want to increase the brightness of every pixel:
+- Split the image into 4 sections
+- Assign each section to a different core
+- All 4 cores run the "increase brightness" function simultaneously
+- Each core processes its portion of the image
+
+**Real-World Examples:**
+
+**Image Processing:**
+\`\`\`
+Image (1000x1000 pixels)
+├─ Core 1: Process pixels 0-250
+├─ Core 2: Process pixels 251-500
+├─ Core 3: Process pixels 501-750
+└─ Core 4: Process pixels 751-1000
+
+All cores apply same filter/operation
+\`\`\`
+
+**Matrix Operations:**
+\`\`\`c
+// Add two large matrices
+for each row in parallel:
+    result[row] = matrix1[row] + matrix2[row]
+\`\`\`
+
+**Scientific Simulations:**
+- Weather modeling on grid points
+- Molecular dynamics simulations
+- Each core simulates different region
+
+**Characteristics:**
+- **SIMD (Single Instruction, Multiple Data)** architecture
+- Used when dealing with large datasets
+- Performing identical operations on each element
+- GPU computing heavily uses data parallelism
+
+### When to Use Data Parallelism
+
+**Use When:**
+- Large datasets to process
+- Same operation on all elements
+- Independent data elements
+- Regular, structured data
+
+**Examples:**
+- Matrix multiplication
+- Image/video processing
+- Array operations
+- Scientific simulations
+
+## 2. Task Parallelism
+
+**Definition:**
+Focuses on distributing different, independent tasks across multiple cores to be performed concurrently. Tasks can operate on the same or different data.
+
+**Concept:**
+- **Different tasks, running at the same time**
+- Distribute tasks, not data
+- Each core runs different code
+- Functional decomposition
+
+**Example:**
+In a video game engine:
+- **Core 1:** Rendering graphics
+- **Core 2:** Physics calculations
+- **Core 3:** AI for computer-controlled characters
+- **Core 4:** Audio processing
+
+Each core performs a completely different task.
+
+**Real-World Examples:**
+
+**Web Browser:**
+\`\`\`
+Core 1: Render HTML/CSS
+Core 2: Execute JavaScript
+Core 3: Handle network requests
+Core 4: Manage user input
+\`\`\`
+
+**Video Encoding:**
+\`\`\`
+Core 1: Read video frames
+Core 2: Apply video filters
+Core 3: Encode to codec
+Core 4: Write to file
+\`\`\`
+
+**Server Application:**
+\`\`\`
+Core 1: Handle HTTP requests
+Core 2: Database queries
+Core 3: Business logic
+Core 4: Send responses
+\`\`\`
+
+**Characteristics:**
+- **MIMD (Multiple Instruction, Multiple Data)** architecture
+- Performing different operations on different data
+- Executing independent tasks concurrently
+- Pipeline-style processing
+
+### When to Use Task Parallelism
+
+**Use When:**
+- Different operations needed
+- Independent tasks
+- Pipeline processing
+- Heterogeneous workload
+
+**Examples:**
+- Web server handling multiple requests
+- Compiling multiple source files
+- Different algorithm stages
+- Multi-stage processing pipeline
+
+### Data vs Task Parallelism Comparison
+
+| Aspect | Data Parallelism | Task Parallelism |
+|--------|------------------|------------------|
+| **Focus** | Distribute data | Distribute tasks |
+| **Operation** | Same on all cores | Different on each core |
+| **Code** | Identical code, different data | Different code per core |
+| **Use Case** | Large datasets | Different operations |
+| **Architecture** | SIMD | MIMD |
+| **Examples** | Matrix ops, image processing | Web server, game engine |
+| **Synchronization** | Less complex | More complex |
+| **Load Balance** | Easier (uniform work) | Harder (varied tasks) |
+
+### Multicore Programming Challenges
+
+### 1. Identifying Tasks
+**Challenge:** Finding areas suitable for parallelization
+
+**Considerations:**
+- Which parts can run concurrently?
+- What are the dependencies?
+- Is parallelization worth the overhead?
+
+### 2. Balance
+**Challenge:** Tasks should perform equal work
+
+**Problems:**
+- Uneven workload distribution
+- Some cores idle while others busy
+- Wasted resources
+
+**Solution:**
+- Dynamic load balancing
+- Work stealing
+- Proper task granularity
+
+### 3. Data Splitting
+**Challenge:** Dividing data among tasks
+
+**Considerations:**
+- How to partition data?
+- Ensuring proper distribution
+- Minimizing communication
+- Cache-friendly access patterns
+
+### 4. Data Dependency
+**Challenge:** Managing shared data access
+
+**Issues:**
+- Race conditions
+- Need for synchronization
+- Locking overhead
+- Deadlock risks
+
+**Solutions:**
+- Locks, mutexes, semaphores
+- Lock-free data structures
+- Message passing
+- Transactional memory
+
+### 5. Testing and Debugging
+**Challenge:** Non-deterministic behavior
+
+**Problems:**
+- Race conditions hard to reproduce
+- Timing-dependent bugs
+- Heisenbugs (disappear when debugging)
+- Complex interactions
+
+**Solutions:**
+- Thread sanitizers
+- Race detection tools
+- Stress testing
+- Logging and tracing
+
+### Multicore Programming Benefits
+
+**Performance:**
+- Faster execution through parallelism
+- Better throughput
+- Reduced latency for parallel tasks
+
+**Efficiency:**
+- Better CPU utilization
+- More work per unit time
+- Energy efficiency
+
+**Scalability:**
+- Add more cores = more performance
+- Scales with hardware improvements
+- Future-proof applications
+
+### Programming Models for Multicore
+
+**Shared Memory:**
+- Threads share address space
+- Communication via shared variables
+- Requires synchronization
+
+**Message Passing:**
+- Independent address spaces
+- Communication via messages
+- No shared state
+
+**Data Parallel:**
+- Operations on collections
+- Map, reduce, filter patterns
+- Library/framework support
+
+**Task-Based:**
+- Express as tasks with dependencies
+- Runtime schedules tasks
+- Example: Intel TBB, OpenMP tasks
+
+### Modern Multicore Examples
+
+**Smartphone (8-core):**
+- 4 performance cores (heavy tasks)
+- 4 efficiency cores (background tasks)
+- Different tasks on different cores
+- Power-efficient multitasking
+
+**Server CPU (64-core):**
+- Handle many simultaneous requests
+- Database queries in parallel
+- Load distributed across cores
+
+**GPU (thousands of cores):**
+- Massive data parallelism
+- Graphics rendering
+- Machine learning
+- Scientific computing
+
+### Conclusion
+
+Multicore programming is essential for modern software:
+- **Concurrency:** Managing multiple tasks
+- **Parallelism:** Executing simultaneously
+- **Data Parallelism:** Same operation, different data
+- **Task Parallelism:** Different operations, parallel execution
+- Requires careful design and understanding of challenges
+        `
       }
     ]
   }
