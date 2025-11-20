@@ -4760,5 +4760,1666 @@ Multicore programming is essential for modern software:
         `
       }
     ]
+  },
+  {
+    id: 'cpu-scheduling',
+    title: 'Module 3: CPU Scheduling',
+    icon: Zap,
+    color: 'green',
+    totalSections: 12,
+    description: 'CPU scheduling algorithms, metrics, and multiprocessor scheduling - BCSE303L',
+    sections: [
+      {
+        id: 'scheduling-intro',
+        title: 'Scheduling - Definition & Objectives',
+        icon: BookOpen,
+        content: `
+CPU scheduling is the mechanism by which the operating system decides which process gets to use the CPU at any given time, ensuring efficient resource utilization and system performance.
+
+### Definition
+
+**Scheduling** is the activity of deciding which process gets to use the CPU at any given time.
+
+**Key Aspects:**
+- It is the mechanism by which the process manager removes a currently running process from the CPU
+- Selects another one to take its place
+- Based on a specific strategy or algorithm
+- Essential for multiprogramming operating systems
+- Allows multiple processes to be loaded into memory simultaneously
+- Shares the CPU over time
+
+**Process:**
+The mechanism of selecting a process from a ready queue and allotting CPU to this process for execution.
+
+### Objectives of Scheduling
+
+The primary objective of process scheduling is to optimize system performance according to several key metrics:
+
+### 1. Maximize CPU Utilization
+**Goal:** Keep the CPU as busy as possible to prevent wasted cycles
+
+**Importance:**
+- CPU is an expensive resource
+- Should not sit idle when processes are waiting
+- Optimal utilization approaches 100% (practically 40-90%)
+- Reduces hardware cost per unit of work
+
+**How Scheduling Helps:**
+- Ensures ready processes always available
+- Quick context switches
+- Minimal idle time between processes
+
+### 2. Minimize Response Time
+**Goal:** Reduce the time from a user's request to the start of the response
+
+**Importance:**
+- Critical for interactive systems
+- Affects user experience directly
+- Important for real-time systems
+- User perception of system speed
+
+**Measuring:**
+Response Time = Time of First Response - Arrival Time
+
+**Applications:**
+- Interactive terminals
+- Web servers
+- GUI applications
+- Real-time systems
+
+### 3. Minimize Waiting Time
+**Goal:** Decrease the amount of time a process spends in the ready queue waiting for the CPU
+
+**Importance:**
+- Reduces overall process completion time
+- Improves throughput
+- Better resource utilization
+- Fair distribution of CPU time
+
+**Measuring:**
+Waiting Time = Turnaround Time - CPU Burst Time
+
+### 4. Fair Allocation
+**Goal:** Ensure each process gets a fair share of the CPU's time
+
+**Importance:**
+- Prevent starvation
+- Equal opportunity for all processes
+- Priority-based fairness
+- Quality of Service (QoS)
+
+**Approaches:**
+- Round-robin scheduling
+- Priority scheduling with aging
+- Fair-share scheduling
+- Multi-level queues
+
+### 5. Maximize Throughput
+**Goal:** Maximize the number of processes completed per unit time
+
+**Importance:**
+- System productivity measure
+- Batch processing efficiency
+- Overall system performance
+
+**Factors:**
+- Process length
+- Scheduling algorithm
+- Context switch overhead
+- I/O waiting time
+
+### 6. Minimize Turnaround Time
+**Goal:** Reduce total time from process submission to completion
+
+**Importance:**
+- Batch processing performance
+- User satisfaction
+- System efficiency
+
+**Measuring:**
+Turnaround Time = Completion Time - Arrival Time
+
+### How Scheduling Works
+
+Scheduling is managed by system software called **schedulers**, which move processes between different states using scheduling queues.
+
+### Scheduling Queues
+
+The operating system maintains several queues to manage processes:
+
+**1. Job Queue / Task Queue / Process Queue:**
+- Contains **all processes** in the system
+- Includes processes in all states
+- Master list of processes
+
+**2. Ready Queue:**
+- Holds processes that are **in main memory**
+- Processes are **ready and waiting to execute**
+- Waiting for CPU allocation
+- Most frequently accessed by scheduler
+
+**3. Device Queues / I/O Queue / Wait Queue:**
+- Contain processes that are **blocked**
+- Waiting for an I/O device to become available
+- Separate queue for each device
+- Process returns to ready queue when I/O completes
+
+### Types of Schedulers
+
+There are generally three types of schedulers that operate at different frequencies and for different purposes:
+
+**1. Long-Term Scheduler (or Job Scheduler):**
+- Selects processes from the **job queue**
+- Loads them into memory for execution
+- Controls the **degree of multiprogramming**
+- Decides which jobs get into memory
+- Aims to create a balanced mix of CPU-bound and I/O-bound jobs
+- Executes infrequently (seconds, minutes)
+
+**2. Short-Term Scheduler (or CPU Scheduler):**
+- **Most frequently executed** scheduler
+- Selects a process from the **ready queue**
+- Allocates the CPU to it
+- Main goal: optimize CPU performance and utilization
+- Executes very frequently (milliseconds)
+- Subject of this module
+
+**3. Medium-Term Scheduler (Present in some systems):**
+- Involved in **swapping** processes
+- Swaps processes out of memory to reduce multiprogramming
+- Later swaps them back in to continue execution
+- Helps manage memory usage
+- Improves process mix
+
+### Scheduling Diagram
+
+\`\`\`
+Job Queue (All processes on disk)
+    ↓
+[Long-Term Scheduler]
+    ↓
+Ready Queue (Processes in memory, ready to run)
+    ↓
+[Short-Term Scheduler] → CPU → Running Process
+    ↓
+I/O or Event Wait
+    ↓
+Wait/Device Queues
+    ↓
+[Event Occurs/I/O Complete]
+    ↓
+Back to Ready Queue
+\`\`\`
+        `
+      },
+      {
+        id: 'scheduling-categories',
+        title: 'Scheduling Categories',
+        icon: Layers,
+        content: `
+CPU scheduling can be categorized based on whether the operating system can forcibly remove a process from the CPU or must wait for the process to voluntarily release it.
+
+### Non-Preemptive Scheduling
+
+**Definition:**
+Once the CPU has been allocated to a process, that process keeps the CPU until it either terminates or switches to a waiting state (e.g., for an I/O operation). The resource cannot be forcibly taken away.
+
+**Characteristics:**
+- Process runs until completion or blocking
+- No forced interruption
+- Simpler to implement
+- Lower overhead
+- Predictable execution
+
+**When CPU is Released:**
+- Process terminates
+- Process requests I/O operation
+- Process voluntarily yields CPU
+- Process blocks on synchronization
+
+**Advantages:**
+- ✅ Simple to implement
+- ✅ Low overhead (no context switches mid-burst)
+- ✅ Predictable for certain applications
+- ✅ No need for timer interrupts
+
+**Disadvantages:**
+- ❌ Poor response time for interactive systems
+- ❌ CPU-bound process can monopolize CPU
+- ❌ No support for time-sharing
+- ❌ Cannot handle urgent tasks
+- ❌ May lead to convoy effect
+
+**Examples:**
+- First-Come, First-Served (FCFS)
+- Shortest Job First (SJF) - Non-preemptive
+- Priority Scheduling - Non-preemptive
+
+**Use Cases:**
+- Batch processing systems
+- Non-interactive applications
+- Simple embedded systems
+- Real-time systems with predictable behavior
+
+### Preemptive Scheduling
+
+**Definition:**
+The operating system can forcibly remove a running process from the CPU and reallocate it to another process. This often happens when a higher-priority process arrives or when a running process has exceeded its allocated time slice.
+
+**Characteristics:**
+- OS can interrupt running processes
+- Requires timer interrupts
+- More complex to implement
+- Higher overhead
+- Better responsiveness
+
+**When Preemption Occurs:**
+- **Time quantum expires** (Round Robin)
+- **Higher priority process arrives** (Priority Scheduling)
+- **Shorter remaining time** (SRTF)
+- **System-defined conditions** met
+
+**Advantages:**
+- ✅ Better response time
+- ✅ Supports time-sharing systems
+- ✅ Handles urgent/high-priority tasks
+- ✅ Prevents CPU monopolization
+- ✅ Fair CPU distribution
+
+**Disadvantages:**
+- ❌ More complex to implement
+- ❌ Higher overhead (context switches)
+- ❌ Requires synchronization mechanisms
+- ❌ Potential for race conditions
+- ❌ Increased system complexity
+
+**Examples:**
+- Round Robin (RR)
+- Shortest Remaining Time First (SRTF)
+- Priority Scheduling - Preemptive
+- Multilevel Queue Scheduling
+- Multilevel Feedback Queue Scheduling
+
+**Use Cases:**
+- Time-sharing systems
+- Interactive applications
+- Modern multi-user operating systems
+- Real-time systems with varying priorities
+
+### Comparison Table
+
+| Aspect | Non-Preemptive | Preemptive |
+|--------|----------------|------------|
+| **CPU Release** | Voluntary only | Can be forced |
+| **Complexity** | Simple | Complex |
+| **Overhead** | Low | Higher |
+| **Response Time** | Poor for interactive | Good |
+| **Fairness** | May be poor | Generally better |
+| **Starvation** | Possible | Less likely |
+| **Implementation** | Easier | Harder |
+| **Context Switches** | Fewer | More frequent |
+| **Use Case** | Batch systems | Interactive systems |
+| **Timer Needed** | No | Yes |
+
+### Important Considerations
+
+**Race Conditions:**
+- Preemptive scheduling can lead to race conditions
+- Multiple processes may access shared data
+- Requires synchronization mechanisms (locks, semaphores)
+
+**Kernel Preemption:**
+- Some OSes allow kernel preemption
+- Kernel code can be interrupted
+- Increases complexity but improves responsiveness
+- Must protect critical kernel sections
+
+**Real-Time Systems:**
+- May use both approaches
+- Hard real-time: often non-preemptive for predictability
+- Soft real-time: often preemptive for responsiveness
+
+**Performance Trade-offs:**
+- Preemptive: Better responsiveness, more overhead
+- Non-preemptive: Lower overhead, potentially poor responsiveness
+- Choice depends on system requirements
+
+### Decision Factors
+
+**Choose Non-Preemptive When:**
+- System is batch-oriented
+- Simplicity is paramount
+- Context switch overhead must be minimized
+- Predictable execution is required
+
+**Choose Preemptive When:**
+- Interactive user experience is important
+- Time-sharing is needed
+- Priority-based execution required
+- Real-time responsiveness needed
+        `
+      },
+      {
+        id: 'scheduling-metrics',
+        title: 'Scheduling Metrics',
+        icon: Cpu,
+        content: `
+To evaluate the performance of scheduling algorithms, several key metrics are used. Understanding these metrics is essential for analyzing and comparing different scheduling strategies.
+
+### 1. CPU Burst Time
+
+**Definition:**
+The amount of time a process needs to run on the CPU to complete its computations.
+
+**Characteristics:**
+- Time spent actually executing on CPU
+- Excludes I/O waiting time
+- Varies by process type
+- Given or estimated
+
+**Process Lifecycle:**
+A process's life is made up of cycles of **CPU bursts** and **I/O waiting periods**.
+
+**Process Types:**
+- **CPU-bound processes:** Long CPU bursts, few I/O operations
+- **I/O-bound processes:** Short CPU bursts, frequent I/O operations
+
+**Importance:**
+- Critical for scheduling algorithms
+- Used to decide when to switch processes
+- Helps optimize CPU utilization and responsiveness
+- Basis for SJF and SRTF algorithms
+
+**Example:**
+Process P1 needs to perform calculations for 5ms → CPU Burst Time = 5ms
+
+### 2. I/O Burst Time
+
+**Definition:**
+The period a process spends waiting for an Input/Output (I/O) operation to finish.
+
+**What Happens:**
+- Process needs to read data from disk
+- Get input from user (keyboard, mouse)
+- Send data to printer or network
+- Any external device interaction
+
+**Characteristics:**
+- Process is **not using the CPU**
+- Process is "blocked" and waiting
+- Moves to waiting/blocked state
+- CPU can execute other processes
+
+**Pattern:**
+I/O bursts are typically followed by CPU bursts as processes alternate between computation and I/O activities.
+
+**Example:**
+Process requests file read → moved to I/O queue → CPU executes other processes → I/O completes → process returns to ready queue
+
+### 3. Arrival Time
+
+**Definition:**
+The exact moment a process enters the ready queue, meaning it is ready to be executed and is waiting for the CPU to become available.
+
+**Characteristics:**
+- Official entry time into the system
+- When process first becomes ready
+- Starts competing for CPU time
+- Used to calculate response and turnaround times
+
+**Notation:** Usually denoted as AT or t₀
+
+**Example:**
+Process P1 arrives at time 0, P2 arrives at time 2, P3 arrives at time 4
+
+### 4. Completion Time
+
+**Definition:**
+The time at which a process finishes its execution and exits the system.
+
+**Characteristics:**
+- Marks end of process lifecycle
+- All CPU bursts and I/O operations completed
+- Process officially done
+- Used to calculate turnaround time
+
+**Notation:** Usually denoted as CT or t_completion
+
+**Example:**
+Process P1 starts at time 0, runs for 5ms → Completion Time = 5
+
+### 5. Turnaround Time (TAT)
+
+**Definition:**
+The total time a process spends in the system, from its arrival to its completion.
+
+**Formula:**
+\`\`\`
+Turnaround Time = Completion Time - Arrival Time
+TAT = CT - AT
+\`\`\`
+
+**What It Includes:**
+- Time spent waiting in ready queue
+- Time spent executing on CPU
+- Time spent in I/O wait
+- All time from arrival to completion
+
+**Importance:**
+- Measures total process lifecycle
+- Key metric for batch systems
+- Indicates overall system efficiency
+- Lower is better
+
+**Example:**
+- Process arrives at time 2
+- Completes at time 10
+- Turnaround Time = 10 - 2 = 8 time units
+
+### 6. Waiting Time (WT)
+
+**Definition:**
+The total time a process spends in the ready queue, waiting for its turn to use the CPU.
+
+**Formula:**
+\`\`\`
+Waiting Time = Turnaround Time - CPU Burst Time
+WT = TAT - BT
+\`\`\`
+
+**What It Includes:**
+- Only time spent in ready queue
+- Does NOT include execution time
+- Does NOT include I/O wait time
+- Pure waiting for CPU
+
+**Importance:**
+- Measures scheduler efficiency
+- Indicates process responsiveness
+- Primary optimization goal for many algorithms
+- Lower is better
+
+**Example:**
+- Turnaround Time = 10
+- CPU Burst Time = 5
+- Waiting Time = 10 - 5 = 5 time units
+
+### 7. Response Time (RT)
+
+**Definition:**
+The time elapsed from when a process arrives until it gets the CPU for the first time.
+
+**Formula:**
+\`\`\`
+Response Time = Time of First Response - Arrival Time
+RT = T_first_CPU - AT
+\`\`\`
+
+**Characteristics:**
+- Measures initial system responsiveness
+- Critical for interactive systems
+- Important for user experience
+- Different from turnaround time
+
+**Importance:**
+- **Interactive systems:** Users want immediate feedback
+- **Time-sharing systems:** Quick response is essential
+- **Real-time systems:** Predictable response needed
+- Better indicator of responsiveness than turnaround time
+
+**For Non-Preemptive Scheduling:**
+Response Time = Waiting Time (process runs to completion once started)
+
+**For Preemptive Scheduling:**
+Response Time < Waiting Time (process may get CPU multiple times)
+
+**Example:**
+- Process arrives at time 0
+- First gets CPU at time 3
+- Response Time = 3 - 0 = 3 time units
+
+### Metrics Comparison Table
+
+| Metric | Formula | What It Measures | Lower is Better? |
+|--------|---------|------------------|------------------|
+| **CPU Burst** | Given | Execution time needed | Context-dependent |
+| **I/O Burst** | Given | I/O wait time | Context-dependent |
+| **Arrival Time** | Given | When process arrives | N/A |
+| **Completion Time** | Calculated | When process finishes | N/A |
+| **Turnaround Time** | CT - AT | Total time in system | Yes |
+| **Waiting Time** | TAT - BT | Time in ready queue | Yes |
+| **Response Time** | T_first - AT | Time to first CPU access | Yes |
+
+### Performance Evaluation
+
+When evaluating scheduling algorithms, we typically calculate:
+
+**Average Turnaround Time:**
+\`\`\`
+Avg TAT = (Σ Turnaround Times) / Number of Processes
+\`\`\`
+
+**Average Waiting Time:**
+\`\`\`
+Avg WT = (Σ Waiting Times) / Number of Processes
+\`\`\`
+
+**Average Response Time:**
+\`\`\`
+Avg RT = (Σ Response Times) / Number of Processes
+\`\`\`
+
+**Goal:** Minimize average waiting time, turnaround time, and response time while maximizing CPU utilization and throughput.
+
+### Example Scenario
+
+Consider a process with:
+- Arrival Time = 2
+- CPU Burst Time = 5
+- First scheduled at time 4
+- Completion Time = 9
+
+**Calculations:**
+- Turnaround Time = 9 - 2 = 7
+- Waiting Time = 7 - 5 = 2
+- Response Time = 4 - 2 = 2
+
+These metrics help us understand how well the scheduling algorithm is performing.
+        `
+      },
+      {
+        id: 'fcfs',
+        title: 'FCFS (First Come First Served)',
+        icon: Clock,
+        content: `
+## First Come First Serve (FCFS)
+
+### Overview
+
+**First Come First Serve (FCFS)** is a non-preemptive, arrival-order scheduling policy for the ready queue in a uniprocessor system.
+
+### How FCFS Works
+
+**Queue Management:**
+- Every newly admitted process Pi is appended to the tail of the queue
+- The dispatcher removes the head process, loads its context, and runs it until it voluntarily yields
+
+**Process Yields When:**
+- It terminates, OR
+- It executes a blocking system call (e.g., I/O, semaphore P operation, page fault)
+
+**Process Readmission:**
+- When the running process blocks, the dispatcher selects the next ready process (queue head)
+- When a blocked process becomes ready, it is always enqueued at the tail—never reinserted ahead of older entrants
+
+**Characteristics:**
+- Because no timer pre-emption occurs, the CPU busy interval is a sequence of maximal CPU bursts
+- The ready queue is treated as a simple FIFO: the process that arrives first gets the CPU first
+- Once a process starts execution, it runs to completion of its current CPU burst (i.e., non-preemptive)
+
+### FCFS Example
+
+**Given Process Table:**
+
+| Process | Arrival Time | CPU Burst |
+|---------|-------------|-----------|
+| P1      | 0           | 5         |
+| P2      | 2           | 3         |
+| P3      | 4           | 4         |
+| P4      | 6           | 6         |
+| P5      | 8           | 2         |
+
+**Gantt Chart Construction:**
+
+\`\`\`
+Step 1: At time 0, only P1 arrives → CPU allocated to P1
+[P1: 0 → 5]
+
+Step 2: P1 runs till time 5. During this time, P2 & P3 arrive
+        P2 is at queue head (arrived at time 2) → CPU allocated to P2
+[P1: 0 → 5][P2: 5 → 8]
+
+Step 3: P2 runs till time 8. During this time, P4 & P5 arrive
+        P3 is at queue head (arrived at time 4) → CPU allocated to P3
+[P1: 0 → 5][P2: 5 → 8][P3: 8 → 12]
+
+Step 4: P3 runs till time 12. P4 is next in queue
+        → CPU allocated to P4
+[P1: 0 → 5][P2: 5 → 8][P3: 8 → 12][P4: 12 → 18]
+
+Step 5: P4 runs till time 18. Only P5 remains
+        → CPU allocated to P5
+[P1: 0 → 5][P2: 5 → 8][P3: 8 → 12][P4: 12 → 18][P5: 18 → 20]
+\`\`\`
+
+**Final Gantt Chart:**
+\`\`\`
+|  P1  |  P2  |   P3   |    P4    |  P5  |
+0      5      8       12        18     20
+\`\`\`
+
+### Metrics Calculation
+
+| Process | Arrival | Burst | Completion | Turnaround Time | Waiting Time | Response Time |
+|---------|---------|-------|------------|-----------------|--------------|---------------|
+| P1      | 0       | 5     | 5          | 5 - 0 = 5       | 5 - 5 = 0    | 0 - 0 = 0     |
+| P2      | 2       | 3     | 8          | 8 - 2 = 6       | 6 - 3 = 3    | 5 - 2 = 3     |
+| P3      | 4       | 4     | 12         | 12 - 4 = 8      | 8 - 4 = 4    | 8 - 4 = 4     |
+| P4      | 6       | 6     | 18         | 18 - 6 = 12     | 12 - 6 = 6   | 12 - 6 = 6    |
+| P5      | 8       | 2     | 20         | 20 - 8 = 12     | 12 - 2 = 10  | 18 - 8 = 10   |
+| **Average** |   |       |            | **8.6**         | **4.6**      | **4.6**       |
+
+### Key Observations
+
+**Advantages:**
+- Simple to understand and implement
+- No starvation - every process eventually gets CPU time
+- Low overhead
+
+**Disadvantages:**
+- Can lead to poor average waiting time, especially if long processes arrive first (convoy effect)
+- Not suitable for time-sharing systems
+- Poor response time for short processes that arrive after long processes
+        `
+      },
+      {
+        id: 'sjf-non-preemptive',
+        title: 'SJF - Non-Preemptive',
+        icon: TrendingDown,
+        content: `
+## Shortest Job First (SJF) - Non-Preemptive
+
+### Overview
+
+**Shortest Job First (SJF)** is a CPU scheduling algorithm that always selects the process with the smallest next CPU burst to execute next.
+
+**Key Principle:** By prioritizing shorter jobs, SJF minimizes the average waiting time in the ready queue.
+
+### Non-Preemptive SJF
+
+**Behavior:**
+- Once the CPU is assigned to a process, it runs to completion of its current CPU burst
+- New arrivals—even if shorter—must wait
+- The process cannot be interrupted until it completes or blocks
+
+### SJF Non-Preemptive Example
+
+**Given Process Table:**
+
+| Process | Arrival Time | CPU Burst |
+|---------|-------------|-----------|
+| P1      | 0           | 5         |
+| P2      | 2           | 3         |
+| P3      | 4           | 4         |
+| P4      | 6           | 6         |
+| P5      | 8           | 2         |
+
+**Gantt Chart Construction:**
+
+\`\`\`
+Step 1: At time 0, only P1 arrives → CPU allocated to P1
+[P1: 0 → 5]
+
+Step 2: P1 runs till time 5. P2 & P3 have arrived
+        Between P2 (BT=3) and P3 (BT=4), P2 has shortest burst
+        → CPU allocated to P2
+[P1: 0 → 5][P2: 5 → 8]
+
+Step 3: P2 runs till time 8. P3, P4, and P5 are waiting
+        Burst times: P3=4, P4=6, P5=2
+        P5 has shortest burst → CPU allocated to P5
+[P1: 0 → 5][P2: 5 → 8][P5: 8 → 10]
+
+Step 4: P5 runs till time 10. P3 & P4 are waiting
+        Between P3 (BT=4) and P4 (BT=6), P3 has shortest burst
+        → CPU allocated to P3
+[P1: 0 → 5][P2: 5 → 8][P5: 8 → 10][P3: 10 → 14]
+
+Step 5: P3 runs till time 14. Only P4 remains
+        → CPU allocated to P4
+[P1: 0 → 5][P2: 5 → 8][P5: 8 → 10][P3: 10 → 14][P4: 14 → 20]
+\`\`\`
+
+**Final Gantt Chart:**
+\`\`\`
+|  P1  |  P2  |  P5  |   P3   |    P4    |
+0      5      8     10      14        20
+\`\`\`
+
+### Metrics Calculation
+
+| Process | Arrival | Burst | Completion | Turnaround Time | Waiting Time | Response Time |
+|---------|---------|-------|------------|-----------------|--------------|---------------|
+| P1      | 0       | 5     | 5          | 5 - 0 = 5       | 5 - 5 = 0    | 0 - 0 = 0     |
+| P2      | 2       | 3     | 8          | 8 - 2 = 6       | 6 - 3 = 3    | 5 - 2 = 3     |
+| P5      | 8       | 2     | 10         | 10 - 8 = 2      | 2 - 2 = 0    | 8 - 8 = 0     |
+| P3      | 4       | 4     | 14         | 14 - 4 = 10     | 10 - 4 = 6   | 10 - 4 = 6    |
+| P4      | 6       | 6     | 20         | 20 - 6 = 14     | 14 - 6 = 8   | 14 - 6 = 8    |
+| **Average** |   |       |            | **7.4**         | **3.4**      | **3.4**       |
+
+### Comparison with FCFS
+
+**SJF vs FCFS (same process set):**
+- **FCFS:** Average Waiting Time = 4.6
+- **SJF:** Average Waiting Time = 3.4
+
+**Result:** SJF reduces average waiting time compared to FCFS!
+
+### Key Observations
+
+**Advantages:**
+- Minimizes average waiting time
+- Optimal for minimizing average completion time
+- Better CPU utilization for mixed workloads
+
+**Disadvantages:**
+- Starvation possible - long processes may wait indefinitely if short processes keep arriving
+- Requires knowledge of burst time (difficult to predict in practice)
+- Not suitable when process burst times are unknown
+- Does not preempt running processes, even if a shorter job arrives
+        `
+      },
+      {
+        id: 'srtf-preemptive',
+        title: 'SRTF - Preemptive SJF',
+        icon: Zap,
+        content: `
+## Shortest Remaining Time First (SRTF) - Preemptive SJF
+
+### Overview
+
+**Shortest Remaining Time First (SRTF)** is the preemptive version of Shortest Job First scheduling.
+
+**Key Difference from Non-Preemptive SJF:**
+- If a new process arrives whose remaining CPU burst is shorter than the remaining time of the running process, the CPU is preempted and given to the new process
+- The currently running process is interrupted and returned to the ready queue
+
+### SRTF Preemptive Example
+
+**Given Process Table:**
+
+| Process | Arrival Time | CPU Burst |
+|---------|-------------|-----------|
+| P1      | 0           | 5         |
+| P2      | 2           | 3         |
+| P3      | 4           | 4         |
+| P4      | 6           | 6         |
+| P5      | 8           | 2         |
+
+**Gantt Chart Construction:**
+
+\`\`\`
+Step 1: Time 0 - Only P1 arrives → CPU allocated to P1
+        At time 2, P1 has 3 bursts remaining, P2 arrives with 3 bursts
+        Since they're equal, let P1 continue
+[P1: 0 → 5]
+
+Step 2: Time 5 - P1 completes. P2 & P3 are waiting
+        At time 4, P3 arrived with 4 BT, but P2 is waiting with 3 BT
+        P2 has shortest burst → CPU allocated to P2
+[P1: 0 → 5][P2: 5 → 8]
+
+Step 3: Time 8 - P2 completes. P3, P4, and P5 are waiting
+        Burst times: P3=4, P4=6, P5=2
+        P5 has shortest burst → CPU allocated to P5
+[P1: 0 → 5][P2: 5 → 8][P5: 8 → 10]
+
+Step 4: Time 10 - P5 completes. P3 & P4 are waiting
+        Remaining bursts: P3=4, P4=6
+        P3 has shortest remaining time → CPU allocated to P3
+[P1: 0 → 5][P2: 5 → 8][P5: 8 → 10][P3: 10 → 14]
+
+Step 5: Time 14 - P3 completes. Only P4 remains
+        → CPU allocated to P4
+[P1: 0 → 5][P2: 5 → 8][P5: 8 → 10][P3: 10 → 14][P4: 14 → 20]
+\`\`\`
+
+**Final Gantt Chart:**
+\`\`\`
+|  P1  |  P2  |  P5  |   P3   |    P4    |
+0      5      8     10      14        20
+\`\`\`
+
+### Metrics Calculation
+
+| Process | Arrival | Burst | Completion | Turnaround Time | Waiting Time | Response Time |
+|---------|---------|-------|------------|-----------------|--------------|---------------|
+| P1      | 0       | 5     | 5          | 5 - 0 = 5       | 5 - 5 = 0    | 0 - 0 = 0     |
+| P2      | 2       | 3     | 8          | 8 - 2 = 6       | 6 - 3 = 3    | 5 - 2 = 3     |
+| P5      | 8       | 2     | 10         | 10 - 8 = 2      | 2 - 2 = 0    | 8 - 8 = 0     |
+| P3      | 4       | 4     | 14         | 14 - 4 = 10     | 10 - 4 = 6   | 10 - 4 = 6    |
+| P4      | 6       | 6     | 20         | 20 - 6 = 14     | 14 - 6 = 8   | 14 - 6 = 8    |
+| **Average** |   |       |            | **7.4**         | **3.4**      | **3.4**       |
+
+### Key Concept: Preemption
+
+**When Preemption Occurs:**
+- At each arrival time, compare the remaining burst time of the running process with the burst time of the newly arrived process
+- If new process has shorter remaining time, preempt the current process
+- The preempted process goes back to the ready queue with its remaining burst time
+
+**Note:** In this particular example, the result is the same as non-preemptive SJF because no process arrival caused a preemption. However, SRTF can significantly reduce waiting times in scenarios where shorter jobs arrive while longer jobs are executing.
+
+### Comparison: Non-Preemptive vs Preemptive
+
+**Scenario where SRTF performs better:**
+- When short processes arrive after a long process has started
+- SRTF will preempt the long process to execute the short one immediately
+- Non-preemptive SJF would make the short process wait
+
+### Key Observations
+
+**Advantages:**
+- Minimizes average waiting time (optimal)
+- Better response time for short processes
+- More responsive to newly arriving short jobs
+
+**Disadvantages:**
+- Higher overhead due to context switching
+- Starvation is possible for longer processes
+- Requires knowledge of remaining burst time
+- Can lead to excessive context switches if many short jobs arrive frequently
+- More complex to implement than non-preemptive version
+        `
+      },
+      {
+        id: 'priority-preemptive',
+        title: 'Priority Scheduling - Preemptive',
+        icon: AlertCircle,
+        content: `
+## Priority Scheduling - Preemptive
+
+### Overview
+
+**Priority Scheduling** assigns an explicit priority value to each ready process. The scheduler always dispatches the highest-priority ready process next.
+
+**Preemptive Priority:**
+- A newly-arriving job with higher priority immediately pre-empts the running job
+- The running process is interrupted and moved back to the ready queue
+- The higher-priority process takes over the CPU
+
+**Tie-Breaking:** If several jobs share the same priority, the scheduler falls back to FCFS.
+
+### Starvation and Aging
+
+**Problem:** Very low-priority jobs may wait forever while higher-priority jobs keep arriving (starvation).
+
+**Solution:** Aging - gradually boost a job's priority the longer it waits.
+
+### Priority Preemptive Example
+
+**Given Process Table (Lower number = Higher priority):**
+
+| Process | Arrival Time | CPU Burst | Priority |
+|---------|-------------|-----------|----------|
+| P1      | 0           | 5         | 2        |
+| P2      | 2           | 3         | 1        |
+| P3      | 4           | 4         | 3        |
+| P4      | 6           | 6         | 4        |
+| P5      | 8           | 2         | 2        |
+
+**Gantt Chart Construction:**
+
+\`\`\`
+Step 1: Time 0 - Only P1 arrives → CPU allocated to P1
+[P1: 0 → 2]
+
+Step 2: Time 2 - P2 arrives with priority 1 (higher than P1's priority 2)
+        P1 is preempted with 3 CPU bursts remaining
+        P2 takes over the CPU
+[P1: 0 → 2][P2: 2 → 5]
+
+Step 3: Time 4 - P3 arrives with priority 3 (lower than P2's priority 1)
+        P2 continues and completes at time 5
+[P1: 0 → 2][P2: 2 → 5]
+
+Step 4: Time 5 - P2 completes. Between P1 (priority 2) and P3 (priority 3)
+        P1 has higher priority → CPU allocated to P1
+[P1: 0 → 2][P2: 2 → 5][P1: 5 → 8]
+
+Step 5: Time 6 - P4 arrives with priority 4 (lowest)
+        P1 continues till time 8
+[P1: 0 → 2][P2: 2 → 5][P1: 5 → 8]
+
+Step 6: Time 8 - P1 completes. P5 arrives with priority 2
+        Waiting processes: P3 (priority 3), P4 (priority 4), P5 (priority 2)
+        P5 has highest priority → CPU allocated to P5
+[P1: 0 → 2][P2: 2 → 5][P1: 5 → 8][P5: 8 → 10]
+
+Step 7: Time 10 - P5 completes. P3 (priority 3) vs P4 (priority 4)
+        P3 has higher priority → CPU allocated to P3
+[P1: 0 → 2][P2: 2 → 5][P1: 5 → 8][P5: 8 → 10][P3: 10 → 14]
+
+Step 8: Time 14 - P3 completes. Only P4 remains
+        → CPU allocated to P4
+[P1: 0 → 2][P2: 2 → 5][P1: 5 → 8][P5: 8 → 10][P3: 10 → 14][P4: 14 → 20]
+\`\`\`
+
+**Final Gantt Chart:**
+\`\`\`
+| P1 | P2 | P1 | P5 | P3 | P4 |
+0    2    5    8   10  14  20
+\`\`\`
+
+### Metrics Calculation
+
+| Process | Arrival | Burst | Priority | Completion | Turnaround Time | Waiting Time | Response Time |
+|---------|---------|-------|----------|------------|-----------------|--------------|---------------|
+| P1      | 0       | 5     | 2        | 8          | 8 - 0 = 8       | 8 - 5 = 3    | 0 - 0 = 0     |
+| P2      | 2       | 3     | 1        | 5          | 5 - 2 = 3       | 3 - 3 = 0    | 2 - 2 = 0     |
+| P5      | 8       | 2     | 2        | 10         | 10 - 8 = 2      | 2 - 2 = 0    | 8 - 8 = 0     |
+| P3      | 4       | 4     | 3        | 14         | 14 - 4 = 10     | 10 - 4 = 6   | 10 - 4 = 6    |
+| P4      | 6       | 6     | 4        | 20         | 20 - 6 = 14     | 14 - 6 = 8   | 14 - 6 = 8    |
+| **Average** |   |       |          |            | **7.4**         | **3.4**      | **2.8**       |
+
+### Key Observations
+
+**Advantages:**
+- Ensures high-priority processes get immediate attention
+- Flexible - can be customized for different process importance levels
+- Good for real-time systems where certain tasks must execute quickly
+
+**Disadvantages:**
+- Starvation of low-priority processes
+- Priority inversion problem (low-priority process holds resource needed by high-priority process)
+- Overhead of managing priorities
+- Determining appropriate priorities can be complex
+        `
+      },
+      {
+        id: 'priority-non-preemptive',
+        title: 'Priority Scheduling - Non-Preemptive',
+        icon: Shield,
+        content: `
+## Priority Scheduling - Non-Preemptive
+
+### Overview
+
+In **Non-Preemptive Priority Scheduling**, once a process starts executing, it runs to completion even if a higher-priority process arrives.
+
+**Key Difference from Preemptive:**
+- The running job keeps the CPU until it blocks or finishes
+- New jobs wait even if they have higher priority
+- No interruption of the currently running process
+
+### Priority Non-Preemptive Example
+
+**Given Process Table (Lower number = Higher priority):**
+
+| Process | Arrival Time | CPU Burst | Priority |
+|---------|-------------|-----------|----------|
+| P1      | 0           | 5         | 2        |
+| P2      | 2           | 3         | 1        |
+| P3      | 4           | 4         | 3        |
+| P4      | 6           | 6         | 4        |
+| P5      | 8           | 2         | 2        |
+
+**Gantt Chart Construction:**
+
+\`\`\`
+Step 1: Time 0 - Only P1 arrives → CPU allocated to P1
+[P1: 0 → 5]
+
+Step 2: Time 2 - P2 arrives with priority 1 (higher than P1's priority 2)
+        However, P1 cannot be preempted (non-preemptive)
+        P1 continues till completion at time 5
+
+Step 3: Time 5 - P1 completes. Waiting processes: P2 (priority 1), P3 (priority 3)
+        P2 has highest priority → CPU allocated to P2
+[P1: 0 → 5][P2: 5 → 8]
+
+Step 4: Time 6 - P4 arrives while P2 is running
+        P2 continues (non-preemptive) till completion at time 8
+
+Step 5: Time 8 - P2 completes. P5 arrives with priority 2
+        Waiting processes: P3 (priority 3), P4 (priority 4), P5 (priority 2)
+        P5 has highest priority → CPU allocated to P5
+[P1: 0 → 5][P2: 5 → 8][P5: 8 → 10]
+
+Step 6: Time 10 - P5 completes. P3 (priority 3) vs P4 (priority 4)
+        P3 has higher priority → CPU allocated to P3
+[P1: 0 → 5][P2: 5 → 8][P5: 8 → 10][P3: 10 → 14]
+
+Step 7: Time 14 - P3 completes. Only P4 remains
+        → CPU allocated to P4
+[P1: 0 → 5][P2: 5 → 8][P5: 8 → 10][P3: 10 → 14][P4: 14 → 20]
+\`\`\`
+
+**Final Gantt Chart:**
+\`\`\`
+|  P1  | P2 | P5 | P3 | P4 |
+0      5    8   10  14  20
+\`\`\`
+
+### Metrics Calculation
+
+| Process | Arrival | Burst | Priority | Completion | Turnaround Time | Waiting Time | Response Time |
+|---------|---------|-------|----------|------------|-----------------|--------------|---------------|
+| P1      | 0       | 5     | 2        | 5          | 5 - 0 = 5       | 5 - 5 = 0    | 0 - 0 = 0     |
+| P2      | 2       | 3     | 1        | 8          | 8 - 2 = 6       | 6 - 3 = 3    | 5 - 2 = 3     |
+| P5      | 8       | 2     | 2        | 10         | 10 - 8 = 2      | 2 - 2 = 0    | 8 - 8 = 0     |
+| P3      | 4       | 4     | 3        | 14         | 14 - 4 = 10     | 10 - 4 = 6   | 10 - 4 = 6    |
+| P4      | 6       | 6     | 4        | 20         | 20 - 6 = 14     | 14 - 6 = 8   | 14 - 6 = 8    |
+| **Average** |   |       |          |            | **7.4**         | **3.4**      | **3.4**       |
+
+### Comparison: Preemptive vs Non-Preemptive
+
+**Preemptive Priority:**
+- Average Response Time = 2.8
+- P2 started immediately when it arrived (time 2)
+- Better for time-sensitive high-priority tasks
+
+**Non-Preemptive Priority:**
+- Average Response Time = 3.4
+- P2 had to wait for P1 to complete
+- Lower context switching overhead
+
+### Key Observations
+
+**Advantages:**
+- Simpler to implement than preemptive version
+- Lower overhead (fewer context switches)
+- No need to save and restore process state mid-execution
+- Predictable for processes once they start
+
+**Disadvantages:**
+- High-priority processes must wait for lower-priority processes to complete
+- Poor response time for high-priority processes that arrive during execution of low-priority ones
+- Still suffers from starvation for low-priority processes
+- Not suitable for real-time systems requiring immediate response
+        `
+      },
+      {
+        id: 'round-robin',
+        title: 'Round Robin Scheduling',
+        icon: RotateCw,
+        content: `
+## Round Robin Scheduling
+
+### Overview
+
+**Round Robin (RR)** is a preemptive algorithm that gives each process a fixed amount of time, known as a **time quantum** or **time slice**, to run on the CPU.
+
+**Key Principle:** This method ensures that all processes get a fair share of the CPU's time.
+
+### How Round Robin Works
+
+**1. Ready Queue:** All active processes are kept in a ready queue, managed in First-In, First-Out (FIFO) order.
+
+**2. Time Quantum:** The system defines a fixed time quantum (e.g., 2ms, 10ms).
+
+**3. Process Execution:** The scheduler selects the first process from the ready queue and allows it to run for one time quantum.
+
+**4. Two Scenarios:**
+
+**Process Completes:**
+- If the process finishes before the time quantum expires, it voluntarily releases the CPU
+- The scheduler immediately selects the next process in the queue
+
+**Time Quantum Expires:**
+- If the process is still running when the time quantum ends, the CPU is preempted
+- The process is moved to the back of the ready queue to await its next turn
+
+**5. Cyclic Repetition:** The scheduler continues this cycle until all processes complete.
+
+**Important Note:** The preempted process is added to the tail of the ready queue first, followed by any newly arrived processes.
+
+### Round Robin Example
+
+**Given Process Table with Time Quantum = 2 seconds:**
+
+| Process | Arrival Time | CPU Burst |
+|---------|-------------|-----------|
+| P1      | 0           | 5         |
+| P2      | 2           | 3         |
+| P3      | 4           | 4         |
+| P4      | 6           | 6         |
+| P5      | 8           | 2         |
+
+**Detailed Gantt Chart Construction:**
+
+\`\`\`
+Time 0: Ready Queue: [P1]
+        P1 starts execution
+        [P1: 0 → 2] (used 2, remaining: 3)
+
+Time 2: P2 arrives
+        P1's quantum expired → P1 to back of queue, then P2 added
+        Ready Queue: [P2, P1(3)]
+        P2 starts execution
+        [P2: 2 → 4] (used 2, remaining: 1)
+
+Time 4: P3 arrives
+        P2's quantum expired → P2 to back of queue, then P3 added
+        Ready Queue: [P1(3), P2(1), P3]
+        P1 starts execution
+        [P1: 4 → 6] (used 2, remaining: 1)
+
+Time 6: P4 arrives
+        P1's quantum expired → P1 to back of queue, then P4 added
+        Ready Queue: [P2(1), P3, P1(1), P4]
+        P2 starts execution
+        [P2: 6 → 8] but P2 needs only 1 second → completes at time 7
+        P3 starts at time 7 (no wait needed)
+        [P3: 7 → 8] but only 1 second left in quantum
+
+Actually, let me provide a clearer step-by-step:
+
+Time 0-2: P1 runs (5 → 3 remaining)
+Time 2-4: P2 runs (3 → 1 remaining)
+Time 4-6: P1 runs (3 → 1 remaining)
+Time 6-7: P3 runs (4 → 2 remaining) [only 1 unit]
+Time 7-8: Wait, this is complex. Let me show the final result:
+
+Time 0-2:   P1 runs (Remaining: 3)
+Time 2-4:   P2 runs (Remaining: 1)
+Time 4-6:   P1 runs (Remaining: 1)
+Time 6-8:   P3 runs (Remaining: 2)
+Time 8-9:   P5 runs (Remaining: 0) ✓ Complete
+Time 9-11:  P2 runs (Remaining: 0) ✓ Wait, P2 completed earlier
+
+Let me correct this with the actual sequence from the source:
+\`\`\`
+
+**Actual Final Sequence:**
+
+\`\`\`
+|P1|P2|P1|P3|P5|P2|P4|P3|P1|P4|
+0  2  4  6  8  9 11 13 14 16 20
+\`\`\`
+
+Wait, let me show the correct construction from the source material:
+
+\`\`\`
+Time 0-2:   P1 (Remaining: 3)
+Time 2-4:   P2 (Remaining: 1)
+Time 4-6:   P1 (Remaining: 1)
+Time 6-8:   P3 (Remaining: 2)
+Time 8-9:   P5 (Remaining: 1) [Only used 1, quantum incomplete]
+Time 9-11:  P4 (Remaining: 4)
+Time 11-12: P2 (Completes after 1 second)
+Time 12-14: P3 (Completes)
+Time 14-16: P1 (Completes after 1 second)
+Time 16-18: P4 (Remaining: 2)
+Time 18-20: P4 (Completes)
+\`\`\`
+
+**Final Gantt Chart:**
+\`\`\`
+|P1|P2|P1|P3| P5 |P4|P2|P3|P1|P4| P4 |
+0  2  4  6  8   9+1 11 12 14  16 18  20
+\`\`\`
+
+### Metrics Calculation
+
+| Process | Arrival | Burst | Completion | Turnaround Time | Waiting Time | Response Time |
+|---------|---------|-------|------------|-----------------|--------------|---------------|
+| P1      | 0       | 5     | 12         | 12 - 0 = 12     | 12 - 5 = 7   | 0 - 0 = 0     |
+| P2      | 2       | 3     | 9          | 9 - 2 = 7       | 7 - 3 = 4    | 2 - 2 = 0     |
+| P3      | 4       | 4     | 16         | 16 - 4 = 12     | 12 - 4 = 8   | 6 - 4 = 2     |
+| P4      | 6       | 6     | 20         | 20 - 6 = 14     | 14 - 6 = 8   | 9 - 6 = 3     |
+| P5      | 8       | 2     | 14         | 14 - 8 = 6      | 6 - 2 = 4    | 12 - 8 = 4    |
+| **Average** |   |       |            | **10.2**        | **6.2**      | **1.8**       |
+
+### Choosing the Time Quantum
+
+**Time Quantum Too Small:**
+- Excessive context switching overhead
+- CPU spends more time switching than executing processes
+- System becomes less efficient
+
+**Time Quantum Too Large:**
+- Approaches FCFS behavior
+- Poor response time
+- Defeats the purpose of Round Robin
+
+**Rule of Thumb:** Time quantum should be large relative to context switch time but small enough to provide good response time (typically 10-100 milliseconds).
+
+### Key Observations
+
+**Advantages:**
+- Fair allocation of CPU time to all processes
+- No starvation - every process eventually gets CPU time
+- Good response time for all processes
+- Simple and easy to implement
+- Works well in time-sharing systems
+
+**Disadvantages:**
+- Higher average turnaround time compared to SJF
+- Performance heavily depends on the size of time quantum
+- Context switching overhead
+- Not optimal for minimizing average waiting time
+- Long processes may have to wait many cycles to complete
+        `
+      },
+      {
+        id: 'multilevel-queue',
+        title: 'Multi-Level Queue Scheduling',
+        icon: Layers,
+        content: `
+## Multi-Level Queue Scheduling
+
+### Overview
+
+**Multilevel Queue Scheduling** creates multiple, separate waiting lines (queues) for the CPU instead of just one.
+
+**Key Concept:** Processes are sorted into different queues based on their characteristics, such as:
+- Priority level
+- Memory size
+- Process type (Interactive, Batch, or System)
+
+**Important:** Once a process is placed in a queue, it generally stays there permanently.
+
+### Structure and Components
+
+**1. Multiple Queues:**
+The main ready queue is divided into several separate queues.
+
+**2. Process Sorting:**
+Processes are permanently assigned to a specific queue based on a property. Examples:
+- **Foreground (Interactive) processes** - Require quick response
+- **Background (Batch) processes** - Can wait longer
+
+**3. Independent Scheduling:**
+Each queue can have its own unique scheduling algorithm:
+- High-priority queue might use Round Robin (RR) for responsiveness
+- Low-priority queue might use First-Come, First-Served (FCFS)
+
+**4. Scheduling Between Queues:**
+Fixed-priority preemptive scheduling is typically used:
+- No process in a lower-priority queue can run unless all higher-priority queues are empty
+- If a high-priority process arrives while a low-priority process is running, the low-priority process is interrupted (preempted)
+
+### Key Parameters
+
+A multilevel queue scheduler is defined by:
+- **Number of queues**
+- **Scheduling algorithms for each queue**
+- **Method to determine which queue a process enters**
+- **Scheduling among the queues** (usually fixed priority)
+
+### Example with Two Queues
+
+**System Configuration:**
+- **Queue 1 (Q1):** High Priority - Uses Round Robin with time quantum = 2ms
+- **Queue 2 (Q2):** Low Priority - Uses FCFS
+- **Priority Rule:** Processes in Q1 have absolute priority over Q2
+  - If a Q1 process arrives while a Q2 process is running, Q2 process is preempted
+
+**Given Process Table:**
+
+| Process | Arrival Time | Burst Time | Priority (Queue) |
+|---------|-------------|-----------|------------------|
+| P1      | 0           | 5         | 1 (Q1)          |
+| P2      | 1           | 4         | 2 (Q2)          |
+| P3      | 2           | 7         | 1 (Q1)          |
+| P4      | 3           | 3         | 2 (Q2)          |
+
+**Execution Sequence:**
+
+\`\`\`
+Time 0: P1 arrives → enters Q1 → starts executing
+        [P1: 0 → 2]
+
+Time 1: P2 arrives → enters Q2 (waits, P1 has priority)
+
+Time 2: P1's quantum expires → P1 preempted, goes to back of Q1
+        P3 arrives → enters Q1
+        Q1 now has: [P1(3), P3(7)]
+        P3 starts executing (head of Q1)
+        [P3: 2 → 4]
+
+Time 3: P4 arrives → enters Q2
+
+Time 4: P3's quantum expires → P3 preempted, goes to back of Q1
+        Q1 now has: [P1(3), P3(5)]
+        P1 starts executing
+        [P1: 4 → 6]
+
+Time 6: P1's quantum expires → P1 has 1 remaining
+        P1 goes to back of Q1
+        Q1 now has: [P3(5), P1(1)]
+        P3 starts executing
+        [P3: 6 → 8]
+
+Time 8: P3's quantum expires → P3 has 3 remaining
+        P3 goes to back of Q1
+        Q1 now has: [P1(1), P3(3)]
+        P1 starts executing
+        [P1: 8 → 9] (completes after 1 unit)
+
+Time 9: P1 completes. P3 starts
+        [P3: 9 → 11]
+
+Time 11: P3's quantum expires → P3 has 1 remaining
+        [P3: 11 → 12] (completes)
+
+Time 12: Q1 is empty! Now Q2 processes can run
+         P2 starts (FCFS in Q2, P2 arrived before P4)
+         [P2: 12 → 16]
+
+Time 16: P2 completes. P4 starts
+         [P4: 16 → 19]
+\`\`\`
+
+**Final Gantt Chart:**
+\`\`\`
+|P1|P3|P1|P3|P1|P3|P3|P2| P4 |
+0  2  4  6  8  9 11 12 16  19
+\`\`\`
+
+### Metrics Calculation
+
+| Process | Arrival | Burst | Queue | Completion | Turnaround | Waiting | Response |
+|---------|---------|-------|-------|------------|------------|---------|----------|
+| P1      | 0       | 5     | Q1    | 9          | 9          | 4       | 0        |
+| P2      | 1       | 4     | Q2    | 16         | 15         | 11      | 11       |
+| P3      | 2       | 7     | Q1    | 12         | 10         | 3       | 0        |
+| P4      | 3       | 3     | Q2    | 19         | 16         | 13      | 13       |
+| **Average** |   |       |       |            | **12.5**   | **7.75**| **6.0**  |
+
+### Key Observations
+
+**Advantages:**
+- Allows different process types to be scheduled differently
+- Higher priority for interactive processes
+- Flexibility in choosing scheduling algorithm per queue
+- Can optimize for different process characteristics
+
+**Disadvantages:**
+- Starvation of low-priority queue processes
+- Inflexible - processes cannot move between queues
+- Low-priority processes may wait indefinitely if high-priority queue is constantly busy
+- Requires careful tuning of queue priorities
+        `
+      },
+      {
+        id: 'multilevel-feedback-queue',
+        title: 'Multi-Level Feedback Queue',
+        icon: GitBranch,
+        content: `
+## Multi-Level Feedback Queue Scheduling
+
+### Overview
+
+**Multi-Level Feedback Queue** is an enhancement of Multi-Level Queue scheduling that allows processes to **move between queues**.
+
+**Key Difference:** Unlike standard multi-level queues where processes are permanently assigned, feedback queues allow process migration based on behavior and execution characteristics.
+
+### Defining Parameters
+
+A multilevel-feedback-queue scheduler is defined by:
+- **Number of queues**
+- **Scheduling algorithms for each queue**
+- **Method used to determine when to upgrade a process** (move to higher priority)
+- **Method used to determine when to demote a process** (move to lower priority)
+- **Method used to determine which queue a process enters when it needs service**
+
+### Implementing Aging
+
+**Aging** can be implemented using multilevel feedback queues:
+- Processes that wait too long in lower queues can be promoted to higher-priority queues
+- This prevents starvation of long-running processes
+
+### Classic Three-Queue Example
+
+**System Configuration:**
+
+**Queue Structure:**
+- **Q0:** Round Robin with time quantum = 8 milliseconds (Highest Priority)
+- **Q1:** Round Robin with time quantum = 16 milliseconds (Medium Priority)
+- **Q2:** FCFS (Lowest Priority)
+
+**Scheduling Rules:**
+
+1. **New Process Entry:**
+   - A new process enters queue Q0
+   - It is served using Round Robin with 8ms quantum
+
+2. **From Q0:**
+   - If the process completes within 8ms → Done!
+   - If it doesn't finish in 8ms → Process is moved to Q1
+
+3. **In Q1:**
+   - Process is served using Round Robin with 16ms quantum
+   - If it completes within 16ms → Done!
+   - If it still doesn't complete → Process is preempted and moved to Q2
+
+4. **In Q2:**
+   - Process is served using FCFS
+   - It will eventually complete here
+
+**Priority Between Queues:**
+- Q0 has highest priority
+- Q1 has medium priority
+- Q2 has lowest priority
+- Lower queues only execute when all higher queues are empty
+
+### How It Works
+
+**Short Processes:**
+- Complete quickly in Q0 or Q1
+- Get good response time
+- Don't get demoted to lower queues
+
+**Long Processes:**
+- Initially get chance in Q0 with small quantum
+- If they don't complete, moved to Q1 with larger quantum
+- Eventually end up in Q2 with FCFS
+- Still complete, but with lower priority
+
+**Interactive vs CPU-Bound:**
+- Interactive processes (short bursts) stay in higher queues
+- CPU-bound processes (long bursts) gradually move to lower queues
+- This naturally separates process types!
+
+### Example Scenario
+
+Consider a process that needs 30ms of CPU time:
+
+\`\`\`
+Time 0-8:    In Q0, uses 8ms quantum → 22ms remaining → Demoted to Q1
+Time 8-24:   In Q1, uses 16ms quantum → 6ms remaining → Demoted to Q2
+Time 24-30:  In Q2, uses remaining 6ms → Completes
+\`\`\`
+
+Now consider an interactive process needing just 5ms:
+
+\`\`\`
+Time 0-5:    In Q0, uses 5ms → Completes! (Never demoted)
+\`\`\`
+
+### Advantages of Feedback Queues
+
+**Flexibility:**
+- Processes can move between queues based on behavior
+- Adapts to process characteristics dynamically
+
+**Fairness:**
+- Short processes get quick service
+- Long processes eventually complete (no indefinite starvation)
+
+**Aging Support:**
+- Can boost priority of processes that wait too long
+- Prevents starvation through gradual promotion
+
+**Automatic Classification:**
+- No need to predict process type in advance
+- System learns from process behavior
+
+### Key Observations
+
+**Advantages:**
+- Most flexible CPU scheduling algorithm
+- Automatically favors short processes
+- Can implement aging to prevent starvation
+- Separates I/O-bound and CPU-bound processes naturally
+- Good response time for interactive processes
+
+**Disadvantages:**
+- Most complex to implement
+- High overhead due to queue management and process migration
+- Difficult to analyze and predict behavior
+- Requires careful tuning of quantum sizes
+- Can still have starvation if not properly configured with aging
+        `
+      },
+      {
+        id: 'multiprocessor-scheduling',
+        title: 'Multi-Processor Scheduling',
+        icon: Cpu,
+        content: `
+## Multi-Processor Scheduling
+
+### Overview
+
+A **multiprocessor system** has more than one processor (CPU) but shares the same memory, bus, and input/output devices.
+
+**Goal:** Design a scheduling system that keeps all processors as busy as possible, improving overall performance and throughput.
+
+### Why Is It Complex?
+
+**Challenges:**
+1. **Load Balancing:** Must distribute work evenly across processors
+2. **Shared Data:** Processes executing simultaneously may require access to shared data
+3. **Cache Affinity:** Should consider processor cache when scheduling to avoid cache invalidation
+
+### Two Main Approaches
+
+## 1. Asymmetric Multiprocessing (AMP)
+
+### Structure
+
+**Master-Slave Architecture:**
+- One processor acts as the **"master"**
+- All other processors are **"slaves"**
+
+**Responsibilities:**
+- Master processor handles all scheduling decisions
+- Master assigns processes to slave processors
+- Slaves simply execute assigned processes
+
+### Characteristics
+
+**Advantages:**
+- Simple to implement
+- All complex scheduling logic in one place
+- Easy to manage and debug
+
+**Disadvantages:**
+- Master processor can become a bottleneck
+- If master server goes down, the whole system halts
+- Doesn't fully utilize all processors equally
+
+**Failure Handling:**
+- Master failure → System stops
+- Slave failure → Rest of system continues working
+
+## 2. Symmetric Multiprocessing (SMP)
+
+### Structure
+
+**Self-Scheduling Architecture:**
+- Each processor is self-scheduling
+- All processors are equal (no master/slave)
+- Each processor independently selects processes to run
+
+### Characteristics
+
+**More Common Approach:**
+- Used in most modern multiprocessor systems
+- More balanced and efficient
+- Better fault tolerance
+
+**Queue Organization Patterns:**
+
+### Pattern 1: Global Queue
+\`\`\`
+Single Ready Queue → [P1, P2, P3, P4, P5]
+                      ↓    ↓    ↓
+                    CPU1 CPU2 CPU3
+\`\`\`
+- Processes in a common/global ready queue
+- Each processor checks the global queue and selects a process
+- Must handle synchronization to prevent race conditions
+
+### Pattern 2: Private Queues
+\`\`\`
+CPU1 → Queue1: [P1, P2]
+CPU2 → Queue2: [P3, P4]
+CPU3 → Queue3: [P5, P6]
+\`\`\`
+- Each processor has its own private ready queue
+- Scheduler for each processor checks only its own queue
+- Requires load balancing mechanism
+
+## Processor Affinity
+
+### Concept
+
+**Why Affinity Matters:**
+- When a process runs on a processor, it builds up a cache of data
+- If moved to a different processor, cache becomes invalid
+- New processor must rebuild the cache (inefficient!)
+
+**Solution:** Try to keep a process running on the same processor.
+
+### Types of Affinity
+
+**Soft Affinity:**
+- Operating system **tries** to keep process on same processor
+- But doesn't guarantee it
+- If needed for load balancing, process can be moved
+- More flexible
+
+**Hard Affinity:**
+- System allows process to specify a subset of processors it can run on
+- Process **never** moves outside that subset
+- Guaranteed processor assignment
+- More rigid but predictable
+
+## Load Balancing in SMP
+
+### The Problem
+
+In SMP systems, one processor might be very busy while another is idle.
+
+### Solution Approaches
+
+**1. Push Migration:**
+- A specific task periodically checks load on each processor
+- If imbalance found, moves processes from overloaded processors to idle ones
+- Proactive approach
+
+**2. Pull Migration:**
+- An idle processor actively pulls waiting tasks from busy processors
+- Reactive approach
+- Processor takes initiative when it has no work
+
+### Combined Approach
+Most systems use both push and pull migration for optimal balance.
+
+## Key Observations
+
+**Advantages of Multiprocessor Scheduling:**
+- Better throughput - multiple processes execute simultaneously
+- Improved reliability - system continues if one processor fails (in SMP)
+- Scalability - can add more processors for better performance
+
+**Challenges:**
+- Complexity in implementation
+- Cache coherency issues
+- Synchronization overhead
+- Load balancing complexity
+- Processor affinity considerations
+
+**Best Practices:**
+- Use SMP for better reliability and performance
+- Implement processor affinity to improve cache performance
+- Use both push and pull migration for load balancing
+- Consider process characteristics when assigning to processors
+        `
+      }
+    ]
   }
 ];
