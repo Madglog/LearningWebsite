@@ -6926,6 +6926,807 @@ Once detected, use one of several recovery methods:
 - Critical resources: Prevention or Avoidance
 - Non-critical resources: Detection or Ignore
         `
+      },
+      {
+        id: 'deadlock-prevention',
+        title: 'Deadlock Prevention Strategies',
+        icon: Shield,
+        content: `
+## Deadlock Prevention Strategies
+
+To prevent deadlocks, the operating system must ensure that **at least one** of the four necessary Coffman conditions can never hold true.
+
+### Strategy 1: Eliminating Mutual Exclusion
+
+#### Method: Making Resources Shareable
+
+**Read-Only Files Example:**
+- Multiple processes can read the same file concurrently
+- No mutual exclusion needed → No waiting → Cannot deadlock
+
+**Spooling (for devices like printers):**
+\`\`\`
+Process → Print Job → Spool Queue → Printer Daemon → Printer
+\`\`\`
+- Printer daemon is the ONLY process with direct printer access
+- Processes send jobs to queue, never hold printer directly
+- Eliminates mutual exclusion for printer
+
+**Evaluation:**
+- ✅ Works well for shareable/output resources
+- ❌ Not applicable to inherently exclusive resources
+
+### Strategy 2: Eliminating Hold and Wait
+
+#### Method 1: Request All Resources at Start
+- Process must request ALL resources before execution begins
+- Never holds some while waiting for others
+
+**Disadvantages:**
+- Low resource utilization (allocated before needed)
+- Hard to predict all needs in advance
+- Starvation possible for popular resources
+
+#### Method 2: Release Before Requesting More
+- Release ALL held resources before requesting new ones
+- Re-acquire old + new together
+
+**Disadvantages:**
+- Very inefficient
+- May need to redo work
+
+### Strategy 3: Eliminating No Preemption
+
+#### Method: Allow Resource Preemption
+
+**Preempt on Request Failure:**
+\`\`\`
+If P1 holds R1, R2 and requests unavailable R3:
+→ Preempt R1, R2 from P1
+→ P1 waits for R1, R2, R3 together
+→ Restart when all available
+\`\`\`
+
+**Applicability:**
+- Works for: CPU registers, memory
+- Does NOT work for: Printers, tape drives
+
+### Strategy 4: Eliminating Circular Wait ⭐ Most Practical
+
+#### Method: Resource Ordering Protocol
+
+**Steps:**
+1. Assign unique number to each resource type
+2. Enforce strictly increasing order of requests
+3. Release higher-numbered resources before requesting lower ones
+
+**Example:**
+\`\`\`
+Resources: R1=1, R2=2, R3=3, R4=4
+
+Valid: Hold R1 → Request R3 → Request R5
+Invalid: Hold R5 → Request R3 (must release R5 first)
+\`\`\`
+
+**Why It Works (Proof):**
+\`\`\`
+Assume circular wait exists:
+P1 → P2 → P3 → ... → Pn → P1
+
+For resources held:
+R(k1) < R(k2) < R(k3) < ... < R(kn) < R(k1)
+→ Impossible! R(k1) cannot be less than itself
+→ Contradiction → No circular wait possible
+\`\`\`
+
+**Advantages:**
+- ✅ Simple to implement
+- ✅ Provably prevents deadlock
+- ✅ Low overhead
+- ✅ Most commonly used in practice
+
+**Disadvantages:**
+- ❌ May be inconvenient for applications
+- ❌ Hard to determine optimal ordering
+
+### Comparison
+
+| Method | Breaks | Practical? | Overhead |
+|--------|--------|------------|----------|
+| Shareable/Spooling | Mutual Exclusion | Sometimes | Low-Medium |
+| Request All | Hold & Wait | No | High |
+| Preemption | No Preemption | Sometimes | Medium |
+| **Ordering** | **Circular Wait** | **Yes** | **Low** |
+
+**Best Practice:** Resource ordering is the most practical and commonly used prevention method.
+        `
+      },
+      {
+        id: 'deadlock-detection',
+        title: 'Deadlock Detection Algorithms',
+        icon: Search,
+        content: `
+## Deadlock Detection Algorithms
+
+Deadlock detection allows deadlocks to occur but periodically checks for them using algorithms. Once detected, recovery methods are applied.
+
+### Detection Approaches
+
+**Single Instance Resources:**
+- Simple detection using Resource Allocation Graph (RAG)
+- Deadlock exists ↔ Cycle exists (sufficient condition)
+
+**Multiple Instance Resources:**
+- More complex detection required
+- Cycle is necessary but not sufficient
+- Need advanced algorithms
+
+### Algorithm 1: Wait-For Graph
+
+**Purpose:** Simplified graph showing only process dependencies (no resource nodes)
+
+**Structure:**
+- **Nodes:** Represent processes only
+- **Edges:** Pi → Pj means Pi is waiting for a resource held by Pj
+
+**Deadlock Detection:**
+- Deadlock exists ↔ Wait-For Graph contains a cycle
+- System periodically invokes cycle detection algorithm
+
+**Example:**
+
+**Resource Allocation Graph:**
+\`\`\`
+P1 → R1 → P2
+P2 → R2 → P3
+P3 → R3 → P1
+\`\`\`
+
+**Wait-For Graph (simplified):**
+\`\`\`
+P1 → P2 → P3 → P1
+(Cycle detected → Deadlock!)
+\`\`\`
+
+**Advantages:**
+- ✅ Simpler than full RAG
+- ✅ Easy cycle detection
+- ✅ Lower space complexity
+
+**Time Complexity:**
+- O(n²) where n = number of processes
+- Acceptable for periodic checking
+
+### Algorithm 2: Resource Matrix Detection
+
+**Used for:** Systems with multiple instances of resources
+
+**Data Structures:**
+
+**Available Vector:**
+- Available[j] = number of available instances of resource type Rj
+
+**Allocation Matrix:**
+- Allocation[i,j] = number of instances of Rj allocated to Pi
+
+**Request Matrix:**
+- Request[i,j] = number of instances of Rj currently requested by Pi
+
+**Algorithm Steps:**
+
+\`\`\`
+1. Initialize Work = Available
+2. Create Finish[i] = false for all processes
+
+3. Find process Pi where:
+   - Finish[i] == false
+   - Request[i] ≤ Work (all requests can be satisfied)
+
+4. If found:
+   - Work = Work + Allocation[i] (simulate completion)
+   - Finish[i] = true
+   - Go to step 3
+
+5. If no such process found:
+   - Any process with Finish[i] == false is deadlocked
+\`\`\`
+
+**Time Complexity:** O(m × n²)
+- m = number of resource types
+- n = number of processes
+
+### Example: Detection with Multiple Instances
+
+**System State:**
+\`\`\`
+Resources: R1=2, R2=3, R3=2
+Available: R1=0, R2=0, R3=1
+\`\`\`
+
+**Process Table:**
+
+| Process | Allocation (R1,R2,R3) | Request (R1,R2,R3) |
+|---------|----------------------|-------------------|
+| P0      | (1,0,1)             | (0,1,1)           |
+| P1      | (1,1,0)             | (1,0,0)           |
+| P2      | (0,1,0)             | (0,0,1)           |
+| P3      | (0,1,0)             | (0,2,0)           |
+
+**Step-by-Step Detection:**
+
+**Step 1:** Work = (0,0,1)
+- Check P0: Request (0,1,1) > Work (0,0,1) ❌
+- Check P1: Request (1,0,0) > Work (0,0,1) ❌
+- Check P2: Request (0,0,1) ≤ Work (0,0,1) ✅
+  - P2 can complete
+  - Work = (0,0,1) + (0,1,0) = (0,1,1)
+  - Finish[P2] = true
+
+**Step 2:** Work = (0,1,1)
+- Check P0: Request (0,1,1) ≤ Work (0,1,1) ✅
+  - P0 can complete
+  - Work = (0,1,1) + (1,0,1) = (1,1,2)
+  - Finish[P0] = true
+
+**Step 3:** Work = (1,1,2)
+- Check P1: Request (1,0,0) ≤ Work (1,1,2) ✅
+  - P1 can complete
+  - Work = (1,1,2) + (1,1,0) = (2,2,2)
+  - Finish[P1] = true
+
+**Step 4:** Work = (2,2,2)
+- All processes finished!
+- **Result: No Deadlock** (Safe sequence: P2, P0, P1, P3)
+
+### Example: Deadlock Detected
+
+**Modified Scenario:**
+\`\`\`
+Available: R1=0, R2=0, R3=0
+\`\`\`
+
+**Execution:**
+- No process can satisfy its requests with Work = (0,0,0)
+- Algorithm terminates immediately
+- All processes have Finish[i] = false
+- **Result: Deadlock involving all processes**
+
+### Detection Frequency
+
+**When to Run Detection?**
+
+**Option 1: Periodic Checks**
+- Run every T time units
+- Lower T = faster detection, higher overhead
+
+**Option 2: On Resource Request**
+- Check when request cannot be immediately granted
+- Detect deadlock right when it occurs
+
+**Option 3: CPU Utilization Threshold**
+- When CPU utilization drops below threshold
+- Indicates possible deadlock (processes waiting)
+
+**Trade-offs:**
+- **Frequent Detection:** Quick response, high overhead
+- **Infrequent Detection:** Low overhead, delayed response
+
+### Recovery After Detection
+
+Once deadlock is detected, several recovery options exist:
+
+1. **Process Termination** (abort deadlocked processes)
+2. **Resource Preemption** (take resources and give to others)
+3. **Rollback** (return to previous safe state)
+
+(Detailed in Recovery section)
+
+### Key Observations
+
+**Detection vs Prevention:**
+- Detection allows maximum resource utilization
+- Prevention is more conservative
+- Detection has runtime overhead
+
+**Practical Use:**
+- Used when deadlocks are rare
+- Combined with recovery mechanisms
+- Suitable for systems tolerating temporary deadlocks
+        `
+      },
+      {
+        id: 'bankers-algorithm',
+        title: "Banker's Algorithm (Avoidance)",
+        icon: Activity,
+        content: `
+## Banker's Algorithm - Deadlock Avoidance
+
+**Banker's Algorithm** is a deadlock avoidance algorithm that checks if resource allocation keeps the system in a "safe state". Named after banking: a banker shouldn't lend all money, must keep reserves.
+
+### Key Concepts
+
+**Safe State:**
+- A state where there exists at least one sequence of processes that can all complete
+- System can grant resources in some order to avoid deadlock
+
+**Unsafe State:**
+- No guaranteed sequence exists for all processes to complete
+- Deadlock is *possible* (but not guaranteed)
+
+**Algorithm Goal:**
+- Only grant resource requests that keep system in safe state
+- Reject requests that would lead to unsafe state (even if resources available)
+
+### Data Structures
+
+**Available[m]:**
+- Vector of length m (number of resource types)
+- Available[j] = number of available instances of resource Rj
+
+**Max[n][m]:**
+- n×m matrix
+- Max[i,j] = maximum instances of Rj that process Pi may need
+
+**Allocation[n][m]:**
+- n×m matrix
+- Allocation[i,j] = instances of Rj currently allocated to Pi
+
+**Need[n][m]:**
+- n×m matrix
+- Need[i,j] = remaining instances of Rj that Pi may need
+- **Need[i,j] = Max[i,j] - Allocation[i,j]**
+
+### Safety Algorithm
+
+**Purpose:** Determine if current state is safe
+
+**Steps:**
+
+\`\`\`
+1. Initialize:
+   Work = Available
+   Finish[i] = false for all i
+
+2. Find process Pi where:
+   - Finish[i] == false
+   - Need[i] ≤ Work (all needs can be satisfied)
+
+3. If found:
+   - Work = Work + Allocation[i] (simulate completion & release)
+   - Finish[i] = true
+   - Go to step 2
+
+4. If all Finish[i] == true:
+   → System is in SAFE state
+   Otherwise:
+   → System is in UNSAFE state
+\`\`\`
+
+### Resource-Request Algorithm
+
+**When Process Pi requests resources Request[i]:**
+
+\`\`\`
+1. Check if Request[i] ≤ Need[i]
+   If not: Error (requesting more than declared max)
+
+2. Check if Request[i] ≤ Available
+   If not: Pi must wait (resources not available)
+
+3. Pretend to allocate (simulation):
+   Available = Available - Request[i]
+   Allocation[i] = Allocation[i] + Request[i]
+   Need[i] = Need[i] - Request[i]
+
+4. Run Safety Algorithm
+   If safe: Grant request (keep simulated allocation)
+   If unsafe: Deny request (restore original state)
+           Pi must wait even though resources available
+\`\`\`
+
+### Comprehensive Example
+
+**System Configuration:**
+- Resources: R1=10, R2=5, R3=7
+- Processes: P0, P1, P2, P3, P4
+
+**Current State:**
+
+| Process | Allocation (R1,R2,R3) | Max (R1,R2,R3) | Need (R1,R2,R3) |
+|---------|----------------------|----------------|-----------------|
+| P0      | (0,1,0)             | (7,5,3)        | (7,4,3)         |
+| P1      | (2,0,0)             | (3,2,2)        | (1,2,2)         |
+| P2      | (3,0,2)             | (9,0,2)        | (6,0,0)         |
+| P3      | (2,1,1)             | (2,2,2)        | (0,1,1)         |
+| P4      | (0,0,2)             | (4,3,3)        | (4,3,1)         |
+
+**Available:** R1=3, R2=3, R3=2
+
+**Step-by-Step Safety Check:**
+
+**Iteration 1:**
+- Work = (3,3,2)
+- Check P0: Need (7,4,3) > Work ❌
+- Check P1: Need (1,2,2) ≤ Work ✅
+  - P1 can complete!
+  - Work = (3,3,2) + (2,0,0) = (5,3,2)
+  - Finish[P1] = true
+
+**Iteration 2:**
+- Work = (5,3,2)
+- Check P3: Need (0,1,1) ≤ Work ✅
+  - P3 can complete!
+  - Work = (5,3,2) + (2,1,1) = (7,4,3)
+  - Finish[P3] = true
+
+**Iteration 3:**
+- Work = (7,4,3)
+- Check P0: Need (7,4,3) ≤ Work ✅
+  - P0 can complete!
+  - Work = (7,4,3) + (0,1,0) = (7,5,3)
+  - Finish[P0] = true
+
+**Iteration 4:**
+- Work = (7,5,3)
+- Check P2: Need (6,0,0) ≤ Work ✅
+  - P2 can complete!
+  - Work = (7,5,3) + (3,0,2) = (10,5,5)
+  - Finish[P2] = true
+
+**Iteration 5:**
+- Work = (10,5,5)
+- Check P4: Need (4,3,1) ≤ Work ✅
+  - P4 can complete!
+  - Finish[P4] = true
+
+**Result:**
+- ✅ All processes finished
+- **Safe State!**
+- **Safe Sequence:** < P1, P3, P0, P2, P4 >
+
+### Example: Unsafe Request
+
+**Scenario:** P1 requests (1,0,2)
+
+**Check 1:** Request ≤ Need?
+- Request (1,0,2) ≤ Need (1,2,2)? ✅
+
+**Check 2:** Request ≤ Available?
+- Request (1,0,2) ≤ Available (3,3,2)? ✅
+
+**Simulate Allocation:**
+\`\`\`
+Available = (3,3,2) - (1,0,2) = (2,3,0)
+Allocation[P1] = (2,0,0) + (1,0,2) = (3,0,2)
+Need[P1] = (1,2,2) - (1,0,2) = (0,2,0)
+\`\`\`
+
+**Run Safety Algorithm:**
+- Work = (2,3,0)
+- Check all processes... None can satisfy their needs!
+- **Unsafe State!**
+
+**Decision:** ❌ Deny request
+- Restore original state
+- P1 must wait even though resources were available
+- Preventing potential future deadlock
+
+### Key Characteristics
+
+**Advantages:**
+- ✅ No deadlock if properly implemented
+- ✅ Better resource utilization than prevention
+- ✅ Allows more concurrency
+
+**Disadvantages:**
+- ❌ Requires knowing maximum needs in advance
+- ❌ Number of processes must be fixed
+- ❌ O(m×n²) complexity per request
+- ❌ May deny safe requests (conservative)
+
+**Practical Limitations:**
+- Hard to know maximum resource needs
+- Process count varies dynamically
+- Not widely used in general-purpose OS
+- Useful in specialized systems (databases, real-time systems)
+
+### Key Observations
+
+**Safe vs Unsafe:**
+- Safe state guarantees no deadlock
+- Unsafe state means deadlock is possible (not certain)
+
+**Banker's is Conservative:**
+- May reject requests that wouldn't actually cause deadlock
+- Trades efficiency for safety guarantee
+
+**Real-World Use:**
+- Databases (transaction management)
+- Real-time systems (predictable behavior)
+- Embedded systems (known resource requirements)
+        `
+      },
+      {
+        id: 'deadlock-recovery',
+        title: 'Deadlock Recovery Methods',
+        icon: RotateCw,
+        content: `
+## Deadlock Recovery Methods
+
+Once a deadlock is detected, the system must take action to break the deadlock and allow processes to continue. Several recovery strategies exist.
+
+### Method 1: Process Termination
+
+Break the deadlock by aborting one or more processes.
+
+#### Option A: Abort All Deadlocked Processes
+
+**Approach:**
+- Terminate all processes involved in the deadlock cycle
+- Guaranteed to break the deadlock immediately
+
+**Advantages:**
+- ✅ Simple to implement
+- ✅ Guaranteed to work
+- ✅ No need for complex decision logic
+
+**Disadvantages:**
+- ❌ Very expensive
+- ❌ All processes lose their work
+- ❌ All partial results are discarded
+- ❌ Must restart all processes from beginning
+
+**When to Use:**
+- Critical situations requiring immediate response
+- When cost of computation is low
+- When processes can easily be restarted
+
+#### Option B: Abort One Process at a Time
+
+**Approach:**
+- Terminate processes one at a time
+- After each termination, run deadlock detection algorithm
+- Continue until deadlock cycle is broken
+
+**Advantages:**
+- ✅ Minimizes number of aborted processes
+- ✅ Less work lost overall
+- ✅ More economical
+
+**Disadvantages:**
+- ❌ Overhead of repeated detection
+- ❌ More complex to implement
+- ❌ Takes longer to resolve deadlock
+
+**Selection Criteria - Which Process to Terminate?**
+
+Consider multiple factors:
+
+**1. Process Priority:**
+- Terminate lower-priority processes first
+- Preserve high-priority/critical processes
+
+**2. Computation Time:**
+- How long has process been computing?
+- How much longer to completion?
+- Consider: Abort processes close to completion OR far from completion?
+
+**3. Resources Used:**
+- How many resources has process consumed?
+- Terminating may waste significant work
+
+**4. Resources Needed:**
+- How many more resources does process need?
+- Processes needing many resources are good candidates
+
+**5. Number of Processes to Terminate:**
+- How many processes needed to break cycle?
+- Prefer terminating fewer processes
+
+**6. Process Type:**
+- Interactive vs Batch process
+- Interactive processes: More visible to users
+- Batch processes: Easier to restart
+
+**Cost Function Example:**
+\`\`\`
+Cost = w1×Priority + w2×TimeExecuted + w3×ResourcesHeld
+     + w4×ResourcesNeeded + w5×NumToTerminate
+
+Terminate process with MINIMUM cost
+\`\`\`
+
+### Method 2: Resource Preemption
+
+Break deadlock by forcibly taking resources from processes.
+
+#### Process
+
+**1. Selecting a Victim:**
+- Choose which resources to preempt
+- Choose which processes to take them from
+- **Goal:** Minimize cost
+
+**Cost Factors:**
+- Number of resources held by process
+- Time process has been executing
+- Importance of process
+- How much longer process needs to run
+
+**2. Rollback:**
+- Cannot simply take resource and continue
+- Must roll back process to a safe state
+- Return process to state before it acquired preempted resource
+
+**Rollback Options:**
+
+**Total Rollback:**
+- Abort process completely
+- Restart from beginning
+- Simple but wasteful
+
+**Partial Rollback:**
+- Roll back to specific checkpoint
+- Requires saving checkpoints periodically
+- More efficient but more complex
+
+**3. Avoiding Starvation:**
+- Same process should not always be chosen as victim
+- Can lead to starvation (process never completes)
+
+**Solution:**
+- Include number of rollbacks in cost function
+- Limit number of times process can be preempted
+- Increase priority after each preemption
+
+**Example:**
+\`\`\`
+Cost = BaseCost + (NumRollbacks × PenaltyFactor)
+
+If process has been rolled back many times:
+→ Cost becomes very high
+→ Less likely to be chosen again
+\`\`\`
+
+#### Applicability
+
+**Works Well For:**
+- CPU registers (easy to save/restore via context switch)
+- Memory pages (can swap to disk)
+- Database locks (transaction rollback)
+
+**Does NOT Work For:**
+- Printers (can't un-print pages)
+- Tape drives (can't reverse operations)
+- Other irreversible resources
+
+### Method 3: Checkpoint and Rollback
+
+Systematic approach combining termination and preemption.
+
+#### Checkpointing
+
+**Concept:**
+- Periodically save process state (checkpoint)
+- Checkpoint includes:
+  - Memory contents
+  - Register values
+  - Open files and their positions
+  - Resource allocations
+
+**Implementation:**
+\`\`\`
+Regular intervals during execution:
+→ Save complete process state
+→ Store to stable storage
+→ Label with timestamp/sequence number
+\`\`\`
+
+#### Recovery Using Checkpoints
+
+**When Deadlock Detected:**
+\`\`\`
+1. Select deadlocked process(es)
+2. Roll back to most recent checkpoint before deadlock
+3. Release resources held since checkpoint
+4. Other processes can now proceed
+5. Restart rolled-back process from checkpoint
+\`\`\`
+
+**Advantages:**
+- ✅ Don't lose all work (only since last checkpoint)
+- ✅ More efficient than full restart
+- ✅ Systematic approach
+
+**Disadvantages:**
+- ❌ Overhead of periodic checkpointing
+- ❌ Storage space for checkpoints
+- ❌ Complexity in implementation
+
+**Optimization:**
+- **Checkpoint Frequency:** Balance overhead vs rollback cost
+- **Checkpoint Storage:** How many checkpoints to keep
+- **Incremental Checkpoints:** Save only changed data
+
+### Comparison of Recovery Methods
+
+| Method | Speed | Work Lost | Complexity | Best For |
+|--------|-------|-----------|------------|----------|
+| Abort All | Fast | High | Low | Critical situations |
+| Abort One at a Time | Slow | Low | Medium | Cost-sensitive |
+| Resource Preemption | Medium | Medium | High | Preemptable resources |
+| Checkpoint/Rollback | Medium | Low | High | Long-running processes |
+
+### Practical Considerations
+
+**1. Combining Methods:**
+- Use different methods for different situations
+- Preempt when possible, terminate when necessary
+
+**2. User Involvement:**
+- Interactive systems: May ask user to choose
+- Automated systems: Use cost functions
+
+**3. Prevention of Repeated Deadlock:**
+- Ensure recovery doesn't immediately lead to same deadlock
+- May need to delay process restart
+- May need to change resource allocation order
+
+**4. Monitoring:**
+- Track recovery statistics
+- Identify problematic processes/resources
+- Adjust prevention strategies if deadlocks are frequent
+
+### Example Scenario
+
+**System State:**
+\`\`\`
+Deadlock detected involving P1, P2, P3
+All holding resources R1, R2, R3
+\`\`\`
+
+**Recovery Decision Tree:**
+\`\`\`
+1. Check if resources are preemptable
+   If YES → Try resource preemption first
+   If NO → Must use process termination
+
+2. Evaluate processes:
+   P1: Low priority, 90% complete
+   P2: High priority, 10% complete
+   P3: Medium priority, 50% complete
+
+3. Cost analysis:
+   Abort P1: Wastes most work
+   Abort P2: High priority (undesirable)
+   Abort P3: Best balance
+
+4. Decision: Abort P3
+   → P3 releases R3
+   → P1 and P2 can continue
+   → Restart P3 later
+\`\`\`
+
+### Key Observations
+
+**No Perfect Recovery:**
+- All methods have costs
+- Choice depends on system requirements
+
+**Prevention vs Recovery Trade-offs:**
+- Aggressive prevention: Avoids recovery cost
+- Lenient prevention: Better utilization but higher recovery cost
+
+**Real Systems:**
+- Often use combination of prevention and recovery
+- Critical resources: Prevent deadlocks
+- Non-critical resources: Allow and recover
+
+**Best Practice:**
+- Design for deadlock prevention when possible
+- Implement detection and recovery as fallback
+- Monitor and adjust based on system behavior
+        `
       }
     ]
   }
