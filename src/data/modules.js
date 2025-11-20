@@ -8415,6 +8415,594 @@ The two-level directory was an important step toward modern hierarchical file sy
 - Concepts live on in home directories
 - Influenced modern file system design
         `
+      },
+      {
+        id: 'directory-advanced-structures',
+        title: 'Tree & Acyclic Graph Directory Structures',
+        icon: GitBranch,
+        content: `
+## Advanced Directory Structures
+
+### 3. Tree Directory Structure
+
+**Most Common in Modern Systems**
+
+#### Structure
+
+This structure extends the two-level directory into a hierarchy where directories can contain not only files but also other directories (subdirectories), creating a tree-like organization.
+
+**Characteristics:**
+- Each user has a home directory
+- Can create complex tree of subdirectories
+- Files accessed using paths from root
+- Nested directory structure
+
+**Visual Representation:**
+\`\`\`
+/ (Root)
+├── home
+│   ├── user1
+│   │   ├── documents
+│   │   │   ├── report.pdf
+│   │   │   └── notes.txt
+│   │   └── projects
+│   │       └── code.py
+│   └── user2
+│       └── data.csv
+├── usr
+│   ├── bin
+│   └── lib
+└── var
+    └── log
+\`\`\`
+
+#### Path Types
+
+**Absolute Path:**
+- Starts from root directory (/)
+- Complete path from top to file
+- Unambiguous reference
+- Example: `/home/user1/documents/report.pdf`
+
+**Relative Path:**
+- Starts from current directory
+- Path relative to current location
+- More convenient for nearby files
+- Example: `documents/report.pdf` (from `/home/user1`)
+
+#### Advantages
+
+✅ **Highly Scalable and Organized:**
+- Very effective for large number of files
+- Group files into logical subdirectories
+- Natural hierarchical organization
+- Intuitive structure
+
+✅ **Flexible Searching:**
+- Use absolute paths (from root)
+- Use relative paths (from current directory)
+- Efficient navigation
+- Multiple ways to reference files
+
+✅ **General and Intuitive:**
+- Widely used in modern systems
+- Easy for users to understand
+- Natural organization model
+- Industry standard
+
+✅ **Supports Complex Organization:**
+- Unlimited depth of subdirectories
+- Group by project, category, date
+- Flexible structure
+- Matches real-world organization
+
+#### Disadvantages
+
+❌ **No Direct File Sharing:**
+- Pure form doesn't allow sharing between branches
+- Files must be copied for multiple locations
+- Leads to file duplication
+- Inconsistency risk
+
+❌ **Inefficiency in Access:**
+- Accessing deep files requires traversing multiple levels
+- Long path names
+- Multiple directory reads
+- Can be slow for deep hierarchies
+
+❌ **Path Name Length:**
+- Deep structures create long paths
+- Path length limits
+- Unwieldy to work with
+- Typing errors more likely
+
+### Use Case
+
+**Best For:**
+- General-purpose operating systems
+- Multi-user environments
+- Complex file organization
+- Modern desktop/server systems
+
+**Examples:**
+- UNIX/Linux file systems
+- Windows NTFS
+- macOS HFS+/APFS
+
+## 4. Acyclic Graph Directory Structure
+
+**Enhancement of Tree Structure with Sharing**
+
+### Structure
+
+This structure allows files or directories to have **multiple parent directories**, enabling them to appear in different locations without duplication. Achieved using links or pointers.
+
+**Key Feature:**
+- File/directory can have multiple parents
+- Create links instead of copies
+- Changes reflected everywhere
+- No cycles allowed (acyclic)
+
+**Visual Representation:**
+\`\`\`
+Root
+├── UserA
+│   ├── project_file.txt
+│   └── shared_data → (link to /UserB/data)
+└── UserB
+    ├── data
+    │   └── dataset.csv
+    └── project_file.txt → (link to /UserA/project_file.txt)
+\`\`\`
+
+### How It Works
+
+**Link Types:**
+
+**1. Hard Links:**
+- Direct pointer to file data
+- Multiple directory entries point to same data
+- Original and link indistinguishable
+- File persists until all links deleted
+
+**2. Symbolic Links (Soft Links):**
+- Pointer to file path
+- Reference by name, not data
+- Can be broken if original deleted
+- More flexible
+
+**Sharing Example:**
+\`\`\`
+User1 creates: /home/user1/project/data.txt
+User2 creates link: /home/user2/shared/data.txt → /home/user1/project/data.txt
+
+Both users see same file
+Changes by either user visible to both
+Only one physical copy on disk
+\`\`\`
+
+### Advantages
+
+✅ **Enables File Sharing:**
+- Easy collaboration
+- Avoid redundant copies
+- Consistent data across users
+- Efficient space usage
+
+✅ **Efficient Searching:**
+- Multiple paths to same file
+- Flexible access patterns
+- Find files through different routes
+- Better discoverability
+
+✅ **Space Efficiency:**
+- Single physical copy
+- Multiple logical locations
+- Reduced storage needs
+- No data duplication
+
+### Disadvantages
+
+❌ **Deletion Complexity:**
+- Deleting file can leave dangling pointers
+- Must handle links carefully
+- Need reference counting
+- Complex bookkeeping
+
+**Deletion Strategies:**
+
+**Reference Counting:**
+- Track number of links to file
+- Only delete when count reaches zero
+- Preserves data if any link exists
+- Overhead of maintaining counts
+
+**Dangling Pointer Detection:**
+- Check if link target exists
+- Handle broken links gracefully
+- May need periodic cleanup
+- User notification for broken links
+
+❌ **Increased Complexity:**
+- More complex than tree
+- Link management overhead
+- Cycle prevention needed
+- Harder to implement
+
+❌ **Traversal Complexity:**
+- Search algorithms more complex
+- Must track visited files
+- Avoid infinite loops (even though acyclic)
+- Extra bookkeeping needed
+
+### Use Case
+
+**Best For:**
+- Collaborative environments
+- Shared projects
+- Systems needing file sharing
+- Advanced file organization
+
+**Examples:**
+- UNIX/Linux symbolic links
+- Windows shortcuts (simplified version)
+- Network file systems
+
+### Key Observations
+
+**Acyclic Guarantee:**
+- No cycles allowed (hence "acyclic")
+- Prevents circular references
+- Directory can't be its own ancestor
+- Simpler traversal algorithms
+
+**Graph Theory:**
+- Directed Acyclic Graph (DAG)
+- Multiple paths to same node
+- No cycles by design
+- Well-defined structure
+
+**Modern Implementations:**
+- Most modern file systems support links
+- Combination of hard and soft links
+- Widely used for sharing
+- Essential for collaboration
+        `
+      },
+      {
+        id: 'directory-general-implementation',
+        title: 'General Graph & Directory Implementation',
+        icon: Network,
+        content: `
+## 5. General Graph Directory Structure
+
+**Most Flexible but Most Complex**
+
+### Structure
+
+This is like the acyclic-graph but **allows cycles**. A directory can contain a link to one of its parent directories or even to itself.
+
+**Key Difference:**
+- No restriction on avoiding cycles
+- Maximum flexibility in linking
+- Can create circular references
+- Most general structure
+
+**Example Cycle:**
+\`\`\`
+Directory A
+├── subdirectory B
+│   └── link to A (cycle!)
+└── file.txt
+\`\`\`
+
+### Advantages
+
+✅ **Maximum Flexibility:**
+- Greatest freedom in interlinking
+- No restrictions on structure
+- Can represent any relationship
+- Ultimate generality
+
+### Disadvantages
+
+❌ **Risk of Infinite Loops:**
+- Traversal algorithms can loop forever
+- Search utilities may never terminate
+- File cleanup tools can fail
+- Serious practical problems
+
+**Example Problem:**
+\`\`\`
+Directory traversal:
+A → B → C → A → B → C → A → ... (infinite!)
+\`\`\`
+
+❌ **High Complexity:**
+- Cycle detection required
+- Garbage collection needed
+- Complex algorithms
+- Difficult to implement correctly
+
+❌ **Performance Issues:**
+- Extra overhead for cycle detection
+- Slower traversals
+- More memory usage
+- Complex bookkeeping
+
+### Solutions to Cycle Problem
+
+**1. Cycle Detection:**
+- Track visited directories
+- Stop when revisiting
+- Breadth-first or depth-first with marking
+- Overhead on every traversal
+
+**2. Garbage Collection:**
+- Periodic cleanup of unreachable files
+- Reference counting insufficient (cycles!)
+- Mark-and-sweep algorithms
+- System resource overhead
+
+**3. Restricted Operations:**
+- Limit link creation
+- Prevent dangerous cycles
+- User warnings
+- Administrative controls
+
+### Use Case
+
+**Rarely Used:**
+- Too complex for most systems
+- Benefits rarely outweigh costs
+- Risk too high
+- Simpler alternatives preferred
+
+**Theoretical Interest:**
+- Academic study
+- Graph algorithms research
+- Not practical for production systems
+
+## Directory Implementation Methods
+
+### How Directory Structures are Physically Stored
+
+## 1. Linear List Implementation
+
+**Simplest Method**
+
+### How It Works
+
+**Structure:**
+- List of file names
+- Each entry points to file's data blocks
+- Sequential storage
+- Simple array or linked list
+
+**Operations:**
+
+**Create File:**
+- Add to end of list
+- Allocate entry
+- Initialize metadata
+- Simple append operation
+
+**Find File:**
+- Linear search through list
+- Check each entry one by one
+- O(n) time complexity
+- Slow for large directories
+
+**Delete File:**
+- Search for file
+- Remove entry
+- Release allocated space
+- May leave gaps
+
+**Visual Representation:**
+\`\`\`
+Directory List:
+[0] "file1.txt" → Block 100
+[1] "report.pdf" → Block 250
+[2] "data.csv" → Block 175
+[3] "program.exe" → Block 300
+...
+\`\`\`
+
+### Advantages
+
+✅ **Simple to Program:**
+- Easy to understand
+- Straightforward implementation
+- Minimal complexity
+- Quick to develop
+
+✅ **Low Overhead:**
+- No additional structures
+- Minimal memory usage
+- Simple data structure
+
+### Disadvantages
+
+❌ **Slow Searches:**
+- Linear search O(n)
+- Inefficient for large directories
+- Performance degrades with size
+- Not scalable
+
+❌ **No Optimization:**
+- Can't leverage sorting
+- No indexing benefits
+- Sequential access only
+
+### Improvements
+
+**Sorted List:**
+- Keep entries alphabetically sorted
+- Enable binary search O(log n)
+- Faster lookups
+- More complex insertion/deletion
+
+**Cached Entries:**
+- Cache recently used entries
+- Improve common case performance
+- Memory overhead
+- Complexity increase
+
+## 2. Hash Table Implementation
+
+**Faster but More Complex**
+
+### How It Works
+
+**Structure:**
+- Hash table + linear list
+- Hash function maps name to index
+- Bucket for collisions
+- Fast lookup
+
+**Process:**
+1. Hash function takes file name
+2. Computes hash value
+3. Use value as index into hash table
+4. Hash table points to file entry
+5. Avoid lengthy linear search
+
+**Visual Representation:**
+\`\`\`
+Hash("file1.txt") = 42
+Hash("report.pdf") = 15
+Hash("data.csv") = 42 (collision!)
+
+Hash Table:
+[15] → "report.pdf" → Block 250
+[42] → "file1.txt" → Block 100
+       ↳ "data.csv" → Block 175 (chained)
+...
+\`\`\`
+
+### Advantages
+
+✅ **Fast Lookups:**
+- Average O(1) access time
+- Significantly faster than linear
+- Scales better
+- Good performance
+
+✅ **Efficient for Large Directories:**
+- Handles many files well
+- Performance stays consistent
+- Better than linear for size
+
+### Disadvantages
+
+❌ **Collisions:**
+- Different names hash to same value
+- Need collision resolution
+- Chaining or open addressing
+- Extra complexity
+
+**Collision Resolution:**
+
+**Chaining:**
+- Link entries at same index
+- List of colliding entries
+- Simple but extra pointers
+- Unlimited entries per bucket
+
+**Open Addressing:**
+- Find next available slot
+- Probe sequence
+- No extra pointers
+- Limited by table size
+
+❌ **Fixed Size:**
+- Hash tables typically fixed size
+- Performance degrades when full
+- Need resizing/reorganization
+- Complex operation
+
+❌ **Resizing Complexity:**
+- When table too full, must resize
+- Rehash all entries
+- Expensive operation
+- Temporary performance hit
+
+❌ **Overhead:**
+- Extra memory for hash table
+- Hash function computation
+- Collision handling structures
+
+### Hash Function Considerations
+
+**Good Hash Function:**
+- Uniform distribution
+- Minimize collisions
+- Fast to compute
+- Deterministic
+
+**Example:**
+\`\`\`
+hash(filename) = (sum of ASCII values) % table_size
+\`\`\`
+
+## Comparison
+
+| Feature | Linear List | Hash Table |
+|---------|------------|------------|
+| Lookup Speed | O(n) | O(1) average |
+| Implementation | Simple | Complex |
+| Memory Overhead | Low | Medium-High |
+| Scalability | Poor | Good |
+| Best For | Small directories | Large directories |
+| Collision Handling | N/A | Required |
+| Resizing | Easy | Complex |
+
+### Choosing Implementation
+
+**Use Linear List When:**
+- Small number of files
+- Simplicity priority
+- Memory constrained
+- Rarely accessed
+
+**Use Hash Table When:**
+- Many files
+- Performance critical
+- Frequent lookups
+- Modern systems
+
+### Modern Implementations
+
+**B-Trees:**
+- Balanced tree structure
+- O(log n) operations
+- Good for disk access
+- Used in many modern file systems
+
+**Extendible Hashing:**
+- Dynamic hash table
+- Grows incrementally
+- Avoids full rehash
+- Better performance
+
+### Key Observations
+
+**Trade-offs:**
+- Speed vs complexity
+- Memory vs performance
+- Simplicity vs scalability
+
+**Evolution:**
+- Start simple (linear)
+- Add complexity as needed (hash)
+- Modern: sophisticated structures (B-trees)
+
+**Real Systems:**
+- Most use advanced structures
+- Optimize for common cases
+- Balance multiple factors
+        `
       }
     ]
   }
