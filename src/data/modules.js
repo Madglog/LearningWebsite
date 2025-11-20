@@ -7729,5 +7729,693 @@ All holding resources R1, R2, R3
         `
       }
     ]
+  },
+  {
+    id: 'file-systems',
+    title: 'Module 6: File Systems',
+    icon: HardDrive,
+    color: 'purple',
+    totalSections: 8,
+    description: 'File system concepts, directory structures, and allocation methods - BCSE303L',
+    sections: [
+      {
+        id: 'fs-introduction',
+        title: 'File System Introduction & Concepts',
+        icon: BookOpen,
+        content: `
+## File System Introduction
+
+### Definition
+
+A **file system** is a structure and set of rules that dictates how data is stored, organized, and managed on storage devices like hard drives, SSDs, and USB drives.
+
+**Key Purpose:**
+- Without a file system, the OS would see storage as a single, undifferentiated block of data
+- Makes it impossible to distinguish between different files
+- Provides organized structure for data management
+
+### File System as an Index
+
+**Functionality:**
+- Acts as an index for all data on a storage device
+- Allows users and applications to create, read, update, and delete files in an organized manner
+- Provides abstraction layer between physical storage and logical data representation
+
+### Core Components
+
+## 1. Files
+
+**Definition:** A file is a named collection of related information recorded on storage.
+
+**Examples:**
+- Document files
+- Program executables
+- Image files
+- Data files
+
+**File Naming:**
+- File systems define naming conventions
+- Length limitations vary by file system
+- Character restrictions apply
+- Extensions identify file types
+
+**File Attributes:**
+- Name
+- Type/Extension
+- Size
+- Creation date
+- Modification date
+- Access permissions
+- Owner information
+
+## 2. Directories
+
+**Definition:** Also known as folders, directories are containers used to group files and other directories.
+
+**Purpose:**
+- Create hierarchical structure
+- Organize related files together
+- Provide logical grouping
+- Enable easier navigation and management
+
+**Hierarchy:**
+- Tree-like structure
+- Root directory at the top
+- Subdirectories branch out
+- Files are leaves in the tree
+
+**Directory Functions:**
+- Group related files
+- Provide namespace (unique names within directory)
+- Enable access control
+- Support file organization
+
+## 3. Partitions
+
+**Definition:** A storage device is typically divided into one or more partitions - distinct regions of storage that the OS manages separately.
+
+**Characteristics:**
+- Each partition is a separate logical unit
+- Can be formatted with different file systems
+- Managed independently by the OS
+- Physical division of storage space
+
+**Benefits:**
+- **Improved Performance:** Separate system and data
+- **Better Security:** Isolate sensitive data
+- **Data Integrity:** Failure in one partition doesn't affect others
+- **Multiple OS:** Different partitions for different operating systems
+
+**Example:**
+\`\`\`
+Hard Drive (1TB)
+├── Partition 1: 500GB (NTFS) - Windows OS
+├── Partition 2: 300GB (ext4) - Linux OS
+└── Partition 3: 200GB (FAT32) - Data sharing
+\`\`\`
+
+## 4. Metadata
+
+**Definition:** Along with the actual data in a file, the file system stores metadata - data about the data.
+
+**Metadata Includes:**
+
+**File Identity:**
+- File name
+- File path
+- File type/extension
+
+**Size Information:**
+- File size in bytes
+- Allocated disk space
+- Number of blocks used
+
+**Timestamps:**
+- Creation date and time
+- Last modification date and time
+- Last access date and time
+- Attribute change time
+
+**Access Control:**
+- Owner information
+- Group information
+- Permission bits (read, write, execute)
+- Access Control Lists (ACLs)
+
+**Location:**
+- Starting block address
+- Inode number
+- File location within directory structure
+
+**File System Specific:**
+- Link count
+- File flags
+- Compression status
+- Encryption status
+
+### File System Functions
+
+**Data Organization:**
+- Logical structure for data storage
+- Hierarchical organization through directories
+- Efficient data retrieval mechanisms
+
+**Space Management:**
+- Track free and used space
+- Allocate space for new files
+- Reclaim space from deleted files
+- Prevent space fragmentation
+
+**Access Control:**
+- User authentication
+- Permission management
+- Security enforcement
+- Multi-user support
+
+**Data Integrity:**
+- Error detection
+- Data recovery mechanisms
+- Journaling for consistency
+- Backup and versioning support
+
+**Performance Optimization:**
+- Caching mechanisms
+- Read-ahead strategies
+- Write buffering
+- Indexing for fast searches
+
+### Key Observations
+
+**Abstraction:**
+- File systems hide physical storage complexity
+- Provide simple, intuitive interface for users
+- Abstract away hardware details
+
+**Versatility:**
+- Support various storage devices
+- Work with different media types
+- Accommodate different use cases
+
+**Essential Component:**
+- Critical for modern operating systems
+- Foundation for data management
+- Enables multi-user environments
+        `
+      },
+      {
+        id: 'fs-interface-access',
+        title: 'File System Interface & Access Methods',
+        icon: Terminal,
+        content: `
+## File System Interface
+
+The file system interface defines how the operating system presents files and directories to users and how applications interact with them.
+
+**Key Functions:**
+- Abstracts physical properties of storage devices
+- Presents logical storage units to users
+- Provides standard operations for file manipulation
+- Enables consistent access across different storage types
+
+### File Operations
+
+**Common File Operations:**
+- **Create:** Make a new file
+- **Open:** Prepare file for access
+- **Read:** Retrieve data from file
+- **Write:** Store data to file
+- **Seek:** Move to specific position in file
+- **Close:** Release file resources
+- **Delete:** Remove file from system
+- **Rename:** Change file name
+- **Copy:** Duplicate file contents
+- **Move:** Change file location
+
+## File Access Methods
+
+Access methods determine how information within a file can be accessed and read.
+
+### 1. Sequential Access
+
+**Definition:** The most common method where information is processed in order, one record after another.
+
+**How It Works:**
+- Information processed sequentially from beginning to end
+- Read operation advances file pointer to next position
+- Write operation appends to end or overwrites subsequent data
+- Emulates magnetic tape operation
+
+**Supported Operations:**
+
+**readnext:**
+- Read current record
+- Advance to next position
+- Return data to caller
+
+**writenext:**
+- Write to current position
+- Advance to next position
+- May extend file
+
+**rewind:**
+- Return to beginning of file
+- Reset file pointer to start
+- Prepare for re-reading
+
+**skip n records:**
+- Jump forward/backward n records
+- May or may not be supported
+- n may be limited to ±1 or positive only
+
+**Characteristics:**
+- Simple to implement
+- Efficient for reading entire file
+- Natural for log files, media files
+- Low memory overhead
+
+**Example Use Cases:**
+\`\`\`
+- Reading log files line by line
+- Processing video/audio streams
+- Batch processing of records
+- Sequential data analysis
+\`\`\`
+
+**Advantages:**
+- ✅ Simple programming model
+- ✅ Efficient for complete file reads
+- ✅ Low resource usage
+- ✅ Works well with streaming data
+
+**Disadvantages:**
+- ❌ Slow for accessing specific records
+- ❌ Must read through all previous data
+- ❌ Inefficient for random access patterns
+
+### 2. Direct Access (Relative Access)
+
+**Definition:** Allows a program to read or write information from a file in any order, without reading from the beginning.
+
+**How It Works:**
+- File viewed as numbered sequence of blocks or records
+- Can jump directly to any record
+- No need to read intermediate data
+- Useful for database applications
+
+**Supported Operations:**
+
+**read n:**
+- Read record number n directly
+- Requires record number as argument
+- Returns specified record
+
+**write n:**
+- Write to record number n directly
+- Requires record number and data
+- Can update existing record
+
+**jump to record n:**
+- Position file pointer at record n
+- n can be 0 (beginning) or end of file
+- Prepare for subsequent operations
+
+**query current record:**
+- Return current record number
+- Useful for saving position
+- Enable return to this location later
+
+**Characteristics:**
+- More complex than sequential
+- Requires indexing or block addressing
+- Enables rapid data access
+- Essential for databases
+
+**Example Use Cases:**
+\`\`\`
+- Database record access
+- Random access to array elements
+- Editing specific sections of files
+- Multi-user file access
+\`\`\`
+
+**Advantages:**
+- ✅ Fast access to any record
+- ✅ No need to read entire file
+- ✅ Efficient for databases
+- ✅ Supports concurrent access patterns
+
+**Disadvantages:**
+- ❌ More complex implementation
+- ❌ Requires more metadata
+- ❌ May waste space for small files
+
+**Important Note:**
+- Sequential access can be easily emulated using direct access
+- Simply read records in order: read 1, read 2, read 3, ...
+- The inverse (direct access from sequential) is complicated and inefficient
+
+### 3. Other Access Methods
+
+**Indexed Access:**
+
+**Concept:**
+- Build index structure on top of direct access
+- Index contains pointers to various blocks
+- Similar to book index
+
+**How It Works:**
+\`\`\`
+Index Block:
+  Key1 → Pointer to Block 10
+  Key2 → Pointer to Block 25
+  Key3 → Pointer to Block 7
+  ...
+
+To find Key2:
+1. Search index for Key2
+2. Get pointer (Block 25)
+3. Read Block 25 directly
+\`\`\`
+
+**Benefits:**
+- Fast lookups without full scan
+- Efficient for large files
+- Supports complex queries
+- Used extensively in databases
+
+**Overhead:**
+- Requires index maintenance
+- Extra storage for index
+- Updates more complex
+
+### Access Method Comparison
+
+| Feature | Sequential | Direct | Indexed |
+|---------|-----------|--------|---------|
+| Access Pattern | Linear | Random | Key-based |
+| Speed (Full Scan) | Fast | Fast | Medium |
+| Speed (Single Record) | Slow | Fast | Very Fast |
+| Complexity | Low | Medium | High |
+| Space Overhead | Low | Low | High (index) |
+| Best For | Logs, Streams | Databases | Large databases |
+
+### Choosing Access Method
+
+**Use Sequential When:**
+- Processing entire file
+- Data naturally ordered
+- Simple applications
+- Minimal complexity needed
+
+**Use Direct When:**
+- Need random access
+- Known record numbers
+- Database operations
+- Multi-user access
+
+**Use Indexed When:**
+- Large files
+- Search by key values
+- Complex queries needed
+- Performance critical
+
+### Key Observations
+
+**Flexibility:**
+- Modern file systems support multiple access methods
+- Applications choose based on needs
+- Can mix methods in same program
+
+**Performance:**
+- Access method significantly impacts performance
+- Choose based on access patterns
+- Consider trade-offs carefully
+
+**Evolution:**
+- Sequential: Historical, tape-based
+- Direct: Enabled by disk technology
+- Indexed: Database optimization
+        `
+      },
+      {
+        id: 'directory-basic-structures',
+        title: 'Single-Level & Two-Level Directory Structures',
+        icon: Layers,
+        content: `
+## Directory Structures
+
+A directory is essentially a container that holds information about a collection of files and can also contain other directories.
+
+### Need for Directory Structures
+
+**Logical Organization:**
+- Group related files together
+- Separate work files from personal files
+- Organize by project, user, or purpose
+- Improve file management
+
+**Efficiency:**
+- Faster file location
+- Easier searching
+- Reduced clutter
+- Better performance
+
+**Convenient Naming:**
+- Simple structures require unique names system-wide (impractical!)
+- Advanced structures allow same filename in different directories
+- Supports multi-user environments
+- Natural organization patterns
+
+**Sharing:**
+- Enable file sharing across locations
+- Share between users without copying
+- Use links to original files
+- Avoid redundant storage
+
+## 1. Single-Level Directory
+
+### Structure
+
+The most straightforward directory structure where **all files are stored in a single, common directory**.
+
+**Concept:**
+- One large folder for everything
+- OS maintains single list of all files
+- New file added to this directory
+- Search performed in one directory
+
+**Visual Representation:**
+\`\`\`
+Root Directory
+├── file1.txt
+├── file2.doc
+├── program.exe
+├── data.csv
+├── report.pdf
+├── notes.txt
+└── ... (all files at same level)
+\`\`\`
+
+### Advantages
+
+✅ **Simplicity:**
+- Easiest structure to understand
+- Simple to implement
+- Minimal complexity
+
+✅ **Easy Access:**
+- Everything in one place
+- Straightforward file location
+- Simple path names
+
+✅ **Simple File Operations:**
+- Creating files is trivial
+- Deleting files is straightforward
+- Renaming is simple
+- No directory navigation needed
+
+### Disadvantages
+
+❌ **Naming Conflicts:**
+- No two files can have same name
+- Becomes major problem with many files
+- Critical issue in multi-user systems
+- Forces long, descriptive names
+
+❌ **Lack of Organization:**
+- Difficult to group related files
+- System becomes cluttered quickly
+- Hard to manage as it grows
+- No logical structure
+
+❌ **Security Issues:**
+- All files in shared directory
+- No way to restrict access to specific files
+- No user isolation
+- Privacy concerns
+
+❌ **Scalability:**
+- Poor performance with many files
+- Linear search for file lookup
+- Becomes unwieldy quickly
+
+### Use Case
+
+**Appropriate For:**
+- Very simple systems
+- Single-user, single-purpose devices
+- Systems with very few files
+- Embedded systems with limited functionality
+
+**Example:**
+Early operating systems, simple embedded systems
+
+## 2. Two-Level Directory
+
+### Structure
+
+To overcome limitations of single-level, the two-level directory creates a **separate directory for each user**.
+
+**Components:**
+
+**Master File Directory (MFD):**
+- Top-level directory
+- Contains pointers to each user's directory
+- One entry per user
+- System-maintained
+
+**User File Directory (UFD):**
+- Individual directory for each user
+- Contains user's files
+- Isolated from other users
+- User-specific namespace
+
+**How It Works:**
+1. User logs in
+2. System accesses their specific UFD
+3. File operations confined to user's directory
+4. Users can have files with same names (different directories)
+
+**Visual Representation:**
+\`\`\`
+Master Directory (MFD)
+├── User1 Directory (UFD)
+│   ├── file1.txt
+│   ├── program.exe
+│   └── data.csv
+├── User2 Directory (UFD)
+│   ├── file1.txt (allowed - different directory!)
+│   ├── report.doc
+│   └── notes.txt
+└── User3 Directory (UFD)
+    ├── project.py
+    └── results.csv
+\`\`\`
+
+### Advantages
+
+✅ **No Naming Conflicts:**
+- Each user has their own namespace
+- Same filename allowed across users
+- Naming collisions eliminated
+- More natural file naming
+
+✅ **Improved Organization:**
+- Files organized by user
+- Per-user file management
+- Easier searching within user's files
+- Clear ownership
+
+✅ **Enhanced Security:**
+- Users isolated from each other
+- Default privacy protection
+- Prevents unauthorized access
+- User-level access control
+
+✅ **Multi-User Support:**
+- Enables multiple concurrent users
+- Each user has private space
+- System-wide unique user IDs
+- Better for shared systems
+
+### Disadvantages
+
+❌ **No Collaboration:**
+- User isolation prevents file sharing
+- Difficult to cooperate on tasks
+- No easy way to share files
+- Hinders teamwork
+
+❌ **Limited Organization for Users:**
+- Separates users but nothing more
+- Single user can't organize their own files
+- All user's files in one flat list
+- No subdirectories for user
+
+❌ **Rigid Structure:**
+- Fixed two-level hierarchy
+- Can't create deeper organization
+- Inflexible for complex needs
+- No support for projects spanning users
+
+### Path Naming
+
+**User File Reference:**
+\`\`\`
+Format: /user/filename
+
+Examples:
+/user1/file1.txt
+/user2/report.doc
+/user3/project.py
+\`\`\`
+
+**System Files:**
+- May have special user (e.g., "system")
+- Accessible to all users (read-only)
+- Shared utilities and libraries
+
+### Use Case
+
+**Appropriate For:**
+- Multi-user systems with limited complexity
+- Educational environments
+- Small business systems
+- Systems with clear user separation
+
+**Example:**
+Early multi-user operating systems, simple timesharing systems
+
+### Evolution Path
+
+**Progression:**
+\`\`\`
+Single-Level → Two-Level → Tree Structure
+
+Simple    →  User     →  Full
+                Separation    Hierarchy
+\`\`\`
+
+The two-level directory was an important step toward modern hierarchical file systems, introducing the concept of nested containers while maintaining simplicity.
+
+### Key Observations
+
+**Historical Significance:**
+- Important evolutionary step
+- Introduced user isolation concept
+- Foundation for more complex structures
+
+**Trade-offs:**
+- Better than single-level for multi-user
+- Still limited compared to tree structures
+- Balance between simplicity and functionality
+
+**Modern Relevance:**
+- Rarely used in pure form today
+- Concepts live on in home directories
+- Influenced modern file system design
+        `
+      }
+    ]
   }
 ];
