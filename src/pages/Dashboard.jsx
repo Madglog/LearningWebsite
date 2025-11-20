@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useProgress } from '../../context/ProgressContext';
-import { Card, CardBody } from '../common/Card';
-import { Badge } from '../common/Badge';
-import { ProgressBar } from '../common/ProgressBar';
+import { useProgress } from '../context/ProgressContext';
+import { Card, CardBody } from '../components/common/Card';
+import { Badge } from '../components/common/Badge';
+import { ProgressBar } from '../components/common/ProgressBar';
 import {
   TrendingUp,
   Award,
@@ -14,7 +14,7 @@ import {
   Calendar,
   CheckCircle
 } from 'lucide-react';
-import { modules } from '../../data/modules';
+import { modules } from '../data/modules';
 
 export const Dashboard = ({ onNavigate }) => {
   const { progress, getModuleProgress } = useProgress();
