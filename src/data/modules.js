@@ -1716,346 +1716,715 @@ These enhancements benefit not just multimedia but all applications requiring pr
   },
   {
     id: 'system-internals',
-    title: 'System Internals',
+    title: 'Module 2: System Internals',
     icon: Cpu,
     color: 'purple',
-    totalSections: 7,
-    description: 'Deep dive into processes, threads, memory, and system calls',
+    totalSections: 14,
+    description: 'System calls, processes, threads, and multicore programming - BCSE303L',
     sections: [
       {
-        id: 'system-calls',
-        title: 'System Calls & Dual Mode',
+        id: 'system-calls-intro',
+        title: 'System Calls - Introduction',
         icon: Terminal,
         content: `
-System calls provide the interface between a process and the operating system. They are the only way for user programs to request OS services.
+An operating system (OS) acts as the fundamental intermediary between computer hardware and the software that runs on it. At the heart of this interaction lies a crucial mechanism known as a **system call**.
 
-### Dual Mode Operation
+### What is a System Call?
 
-Modern operating systems operate in two distinct modes to protect the system:
+A **system call** is a programmatic way for a running program to request a service from the operating system's kernel.
 
-**User Mode (Ring 3):**
-- Limited access to hardware
-- Cannot execute privileged instructions
-- Cannot directly access memory of other processes
-- Applications run here
-- Safer but restricted
+**Key Concepts:**
+- System calls provide a layer of abstraction
+- The OS manages computer resources and offers a consistent interface to applications
+- For security and stability, modern operating systems employ **dual-mode operation**: user mode and kernel mode
 
-**Kernel Mode (Ring 0):**
-- Full access to hardware
+### User Mode vs Kernel Mode
+
+**User Mode:**
+- This is the **non-privileged mode** where most applications run
+- In this mode, a program has **restricted access** to system resources
+- Cannot directly interact with hardware
+- Applications must request OS services through system calls
+- Safer execution environment
+
+**Kernel Mode:**
+- This is the **privileged mode** where the operating system kernel executes
+- In this mode, the code has **complete access** to all hardware and system resources
 - Can execute all CPU instructions
-- Can access all memory
-- OS kernel runs here
-- Powerful but dangerous
+- Direct hardware manipulation allowed
+- Full control over the system
 
-### System Call Workflow
+### The Bridge Between Modes
 
-1. **Application makes a system call** (e.g., \`open("file.txt", O_RDONLY)\`)
-2. **Library wrapper is called** (libc function)
-3. **TRAP/INT instruction executes** (software interrupt)
-4. **Mode switch:** User Mode → Kernel Mode
-5. **Context saved:** Registers, Program Counter, Stack Pointer
-6. **System call handler executes** (kernel looks up system call table)
-7. **Kernel performs the operation** (with full privileges)
-8. **Result is prepared** (return value, error codes)
-9. **Mode switch:** Kernel Mode → User Mode
-10. **Context restored:** Program continues execution
-11. **Result returned to application**
+System calls provide a **controlled and secure bridge** between these two modes:
+- When an application needs to perform a privileged action (e.g., reading from a file, opening a network connection)
+- It must **request** the operating system's kernel to perform the task on its behalf
+- This request is made through a system call
 
-### Parameter Passing Methods
+### Why System Calls are Important
 
-**1. Registers:**
-- Fastest method
-- Parameters stored in CPU registers
-- Limited by number of available registers
-- Used for simple calls with few parameters
+**Hardware Abstraction:**
+- System calls provide a standardized way for programs to interact with hardware
+- Abstract the complexities of hardware
+- Ensure hardware-independent operation
+- Programs don't need to know hardware details
 
-**2. Memory Block/Table:**
-- Parameters stored in memory block
-- Address of block passed in register
-- Unlimited parameter size
-- Used by Linux, Solaris
+**Resource Management:**
+- Enable efficient management and sharing of hardware resources
+- Control access to CPU, memory, and I/O devices
+- Prevent resource conflicts
+- Fair allocation among processes
 
-**3. Stack:**
-- Parameters pushed onto stack by program
-- Popped by kernel
-- Unlimited parameter size
-- Most flexible
-- Slight performance overhead
+**Security and Protection:**
+- Allow the OS to enforce security policies
+- Ensure programs operate within allocated permissions
+- Prevent unauthorized access to critical resources
+- Isolation between processes
+- Protection of system integrity
+        `
+      },
+      {
+        id: 'system-calls-working',
+        title: 'System Calls - How They Work',
+        icon: Cpu,
+        content: `
+The execution of a system call involves a well-defined sequence of steps that facilitates the transition from user mode to kernel mode and back.
+
+### System Call Execution Workflow
+
+**Step 1: Application Initiates the Call**
+- A user program (written in C++, Python, etc.) makes a call to a library function
+- Example: \`fopen()\` to open a file
+- This library function is part of the **Application Programming Interface (API)** provided by the system
+
+**Step 2: Library Function Invokes the System Call**
+- The library function is a **wrapper** containing necessary preparation code
+- Preparation involves:
+  - Placing the **system call number** (unique integer identifying the service) in registers
+  - Placing **arguments** (e.g., filename, access mode) in specific registers or stack
+- Example: For \`fopen("file.txt", "r")\`, it prepares syscall number (e.g., \`SYS_open\`)
+
+**Step 3: The TRAP Instruction**
+- The library function executes a special instruction called **TRAP** or **INT** (interrupt)
+- This instruction causes a **software interrupt**
+- Signals the processor to switch from **user mode** to **kernel mode**
+- A controlled entry point into the kernel
+
+**Step 4: The Kernel Takes Over**
+- Upon receiving the trap, the processor:
+  - **Saves the current state** of the user program (program counter, registers)
+  - **Jumps to a specific location** in kernel memory
+- This location is the starting address of the **Interrupt Service Routine (ISR)** or **System Call Handler**
+
+**Step 5: Executing the System Call**
+- The system call handler uses the system call number to look up the corresponding kernel function
+- Looks up in the **system call table**
+- This table maps each system call number to the address of kernel code implementing that service
+- Locates the appropriate kernel function (e.g., \`sys_open()\`)
+
+**Step 6: Performing the Operation**
+- The kernel executes the requested operation
+- Example for opening a file:
+  - **Check file permissions**
+  - **Locate the file** on storage device
+  - **Create an entry** in the system-wide open file table
+  - **Allocate file descriptor**
+  - Interact with file system
+- May involve device drivers and hardware interaction
+- Uses MMU (Memory Management Unit) and I/O controllers
+
+**Step 7: Returning to User Mode**
+- Once the kernel completes the operation:
+  - Places the **return value** (e.g., file descriptor or error code) in a designated register
+  - **Restores the saved state** of the user program
+  - Executes a special **return-from-interrupt** instruction
+
+**Step 8: Resuming Application Execution**
+- The return-from-interrupt instruction:
+  - Switches the processor back from **kernel mode** to **user mode**
+  - Execution of user program **resumes** from where it left off
+  - Result of the system call is now available to the application
+
+### Complete System Call Flow Diagram
+
+\`\`\`
+User Application (User Mode)
+    ↓ fopen("file.txt", "r")
+C Library (glibc, etc.)
+    ↓ Wrapper: prepare args, set syscall number (SYS_open)
+TRAP/INT Instruction (Switch to Kernel Mode)
+    ↓
+Kernel: Trap Handler
+    ↓ Save user context (registers, PC), Find ISR/System Call Table
+System Call Table
+    ↓ Look up kernel function (sys_open())
+Kernel Function (sys_open)
+    ↓ Check permissions, locate file, allocate file descriptor
+Device Driver / File System
+    ↓ Read from disk, use MMU, I/O controllers
+Hardware Interaction by Kernel
+    ↓
+Return Value to User
+    ↓
+Kernel: Restore Context
+    ↓ Return from TRAP, switch back to user mode
+Resume User Application
+    ↓
+User Application (User Mode)
+    ↓ Continue execution (fd = 3 returned)
+\`\`\`
+
+### Key Points
+
+- **System calls are expensive** due to mode switches and context saving/restoring
+- They provide **necessary protection** and isolation
+- The **system call table** is a critical kernel data structure
+- All privileged operations **must go through** system calls
+- User programs **never directly** execute in kernel mode
+        `
+      },
+      {
+        id: 'system-calls-api',
+        title: 'System Calls Interface / API',
+        icon: BookOpen,
+        content: `
+The System Call Interface (API) provides the mechanism through which applications interact with the operating system.
+
+### What is a System Call Interface/API?
+
+A **set of functions, system calls, and protocols** that allows applications to interact with the OS and other software components.
+
+**Purpose:**
+- Defines the way applications request services from the OS
+- Provides a level of abstraction between application and underlying OS
+- Simplifies development
+- Ensures compatibility and security
+
+### How the System Call Interface Works
+
+**System Call Numbering:**
+- A number is associated with each system call
+- The system-call interface maintains a **table indexed** according to these numbers
+- Example: \`open()\` might be syscall #5, \`read()\` might be #3
+
+**Invocation Process:**
+- The system-call interface invokes the intended system call in the OS kernel
+- Returns the **status of the system call** to the caller
+- Handles error conditions and return values
+
+### Abstraction and Hiding Details
+
+**Caller Simplicity:**
+- The caller **need know nothing** about how the system call is implemented
+- Just needs to **obey the API** specification
+- Understand what the OS will do as a result of the call
+
+**Hidden Complexity:**
+- Most details of the OS interface are **hidden from the programmer** by the API
+- Managed by **run-time support library**
+- Set of functions built into libraries included with the compiler
+
+### Run-Time Support Library
+
+**What it Provides:**
+- Pre-compiled functions that wrap system calls
+- Standard C library (\`libc\` on Unix/Linux)
+- Handles low-level details like:
+  - Register setup
+  - System call number assignment
+  - Error code translation
+  - Return value handling
+
+**Benefits:**
+- Portability across different systems
+- Consistent interface
+- Error handling
+- Type safety
 
 ### Common System Call Categories
 
 **Process Control:**
-- \`fork()\` - Create new process
+- \`fork()\` - Create a new process
+- \`exec()\` - Execute a program
 - \`exit()\` - Terminate process
 - \`wait()\` - Wait for child process
-- \`exec()\` - Execute program
+- \`getpid()\` - Get process ID
 
 **File Management:**
 - \`open()\` - Open file
 - \`read()\` - Read from file
 - \`write()\` - Write to file
 - \`close()\` - Close file
+- \`lseek()\` - Move file pointer
+- \`stat()\` - Get file status
 
 **Device Management:**
-- \`ioctl()\` - Device control
-- \`read()\` - Read from device
-- \`write()\` - Write to device
+- \`ioctl()\` - Device-specific operations
+- \`read()\` / \`write()\` - I/O operations
+- Device drivers interface
 
 **Information Maintenance:**
 - \`getpid()\` - Get process ID
+- \`alarm()\` - Set alarm clock
+- \`sleep()\` - Suspend execution
 - \`time()\` - Get system time
-- \`sleep()\` - Sleep for time
+- \`gettimeofday()\` - Get time of day
 
 **Communication:**
 - \`pipe()\` - Create pipe
 - \`socket()\` - Create socket
-- \`send()\` - Send message
-- \`receive()\` - Receive message
+- \`send()\` / \`recv()\` - Network communication
+- \`shmget()\` - Shared memory
+- \`msgget()\` - Message queues
+
+**Protection:**
+- \`chmod()\` - Change file permissions
+- \`chown()\` - Change file owner
+- \`umask()\` - Set file creation mask
+
+### API vs System Call
+
+**API (Application Programming Interface):**
+- High-level interface for programmers
+- May involve multiple system calls
+- Portable across systems
+- Example: \`fopen()\` in C standard library
+
+**System Call:**
+- Low-level kernel entry point
+- Directly invokes kernel code
+- OS-specific
+- Example: \`open()\` syscall on Unix
+
+### Example: Opening a File
+
+**Application Code:**
+\`\`\`c
+FILE *fp = fopen("data.txt", "r");
+\`\`\`
+
+**What Happens:**
+1. \`fopen()\` is a C library function (API)
+2. It calls \`open()\` system call
+3. Kernel opens file
+4. Returns file descriptor
+5. \`fopen()\` wraps it in FILE structure
+6. Returns FILE pointer to application
+
+### Benefits of the API Layer
+
+**Portability:**
+- Same API works on different operating systems
+- OS-specific details hidden
+
+**Ease of Use:**
+- Higher-level abstractions
+- Better error handling
+- Convenient data structures
+
+**Buffering and Optimization:**
+- Library can buffer I/O operations
+- Reduce number of actual system calls
+- Improve performance
+
+**Type Safety:**
+- Strong typing in library functions
+- Compile-time checks
+- Reduces errors
         `
       },
       {
-        id: 'process-concept',
-        title: 'Process Concept & Lifecycle',
-        icon: Cpu,
-        content: `
-A process is a program in execution. It's the fundamental unit of work in an operating system.
-
-### Program vs Process
-
-**Program:**
-- Passive entity (executable file on disk)
-- Static instructions and data
-- Can exist indefinitely
-- Multiple processes can run same program
-
-**Process:**
-- Active entity (program in execution)
-- Dynamic with changing state
-- Has limited lifetime
-- Each has unique Process ID (PID)
-
-### Process Components
-
-**1. Text Section (Code):**
-- Compiled machine code
-- Read-only to prevent modification
-- Can be shared between processes
-- Contains program instructions
-
-**2. Data Section:**
-- Global variables
-- Static variables
-- Initialized data segment
-- BSS (uninitialized data)
-
-**3. Heap:**
-- Dynamically allocated memory
-- Grows upward (toward higher addresses)
-- malloc(), new allocations
-- Manual management required
-
-**4. Stack:**
-- Function call frames
-- Local variables
-- Function parameters
-- Return addresses
-- Grows downward (toward lower addresses)
-
-**5. Program Counter (PC):**
-- Address of next instruction
-- Saved/restored on context switch
-
-**6. CPU Registers:**
-- Accumulator
-- Index registers
-- Stack pointer
-- General-purpose registers
-
-### Process States
-
-**New:**
-- Process being created
-- PCB allocated
-- Resources being assigned
-- Not yet ready to execute
-
-**Ready:**
-- Process loaded in memory
-- Waiting for CPU allocation
-- In ready queue
-- Can execute when scheduled
-
-**Running:**
-- Instructions being executed
-- Has CPU allocated
-- One process per core
-- Active execution
-
-**Waiting (Blocked):**
-- Waiting for I/O completion
-- Waiting for event/signal
-- Cannot execute even if CPU free
-- In waiting queue
-
-**Terminated:**
-- Finished execution
-- Exit status set
-- Resources being deallocated
-- PCB will be removed
-
-### Context Switching
-
-When the CPU switches from one process to another:
-
-**Steps:**
-1. Save state of current process (in PCB)
-2. Update PCB (state, registers, PC)
-3. Move PCB to appropriate queue
-4. Select new process to run (scheduling)
-5. Load state of new process (from PCB)
-6. Resume execution of new process
-
-**Cost:**
-- Direct: Time to save/restore registers
-- Indirect: Cache pollution, TLB flush
-- Typically 1-1000 microseconds
-
-**Reasons for Context Switch:**
-- Time quantum expires (time-sharing)
-- Process blocks on I/O
-- Higher priority process arrives
-- Interrupt occurs
-        `
-      },
-      {
-        id: 'threads',
-        title: 'Threads & Multithreading',
+        id: 'parameter-passing',
+        title: 'Parameter Passing between Programs & Kernel',
         icon: Layers,
         content: `
-A thread is a lightweight process. It's the basic unit of CPU utilization, consisting of a thread ID, program counter, register set, and stack.
+When a program makes a system call, it needs to pass parameters (arguments) to the kernel. There are three main methods for passing these parameters.
 
-### Thread vs Process
+### Method 1: Using Registers (Limited Space)
 
-**Process:**
-- Heavyweight
-- Own address space
-- Own resources
-- Expensive creation/destruction
-- Expensive context switch
+**How it Works:**
+- This is the **simplest method**
+- The program puts information directly into special CPU locations called **registers**
+- Fast and efficient
 
-**Thread:**
-- Lightweight
-- Shared address space
-- Shared resources
-- Cheap creation/destruction
-- Cheap context switch
+**Limitations:**
+- There are only a **few registers** available
+- This might not work if there's a lot of information to send
+- Limited by number of available CPU registers
+- Not suitable for complex system calls with many parameters
 
-### What Threads Share
+**Example:**
+- Small parameters like integers, file descriptors
+- Simple system calls like \`getpid()\` (no parameters)
+- \`close(fd)\` (one parameter)
 
-- Code section
-- Data section
-- Heap
-- Open files
-- Signals
-- Process ID
+**Advantages:**
+- ✅ **Fastest method** - no memory access needed
+- ✅ Simple to implement
+- ✅ Minimal overhead
 
-### What Threads Don't Share
+**Disadvantages:**
+- ❌ **Limited space** - only a few registers
+- ❌ Can't handle many parameters
+- ❌ Can't pass large data structures
 
-- Thread ID
-- Program Counter
-- Register set
-- Stack
-- Local variables
+### Method 2: Packing Information (Memory Block)
 
-### Benefits of Multithreading
+**How it Works:**
+- If there's too much information for registers, the program creates a **block of memory**
+- Like packing items into a box
+- Store all the details in this memory block
+- The program sends the **address of this block** to the OS using a register
+- The OS knows where to find all the information
 
-**1. Responsiveness:**
-- UI remains responsive while processing
-- Can continue execution if part blocks
-- Better user experience
+**Used By:**
+- **Linux** operating system
+- **Solaris** operating system
 
-**2. Resource Sharing:**
-- Threads share memory and resources
-- No need for shared memory mechanisms
-- Easier communication
+**Example:**
+\`\`\`c
+struct params {
+    char *filename;
+    int flags;
+    int mode;
+};
+struct params p = {"file.txt", O_RDONLY, 0644};
+syscall(SYS_open, &p);  // Pass address of structure
+\`\`\`
 
-**3. Economy:**
-- Cheaper than process creation
-- Less overhead for context switching
-- More efficient resource utilization
+**Advantages:**
+- ✅ **Unlimited parameters** - block can be any size
+- ✅ Can pass complex data structures
+- ✅ Organized and structured
 
-**4. Scalability:**
-- Can utilize multiple CPU cores
-- Parallel execution
-- Better performance on multicore systems
+**Disadvantages:**
+- ❌ Requires memory allocation
+- ❌ Need to copy data to/from memory
+- ❌ Slightly slower than registers
 
-### Multithreading Models
+### Method 3: Stack It Up
 
-**1. Many-to-One:**
-- Many user threads → One kernel thread
-- Thread management in user space
-- Fast thread operations
-- But: One blocking call blocks all
-- No parallel execution
-- Example: Green threads
+**How it Works:**
+- The program puts information **one piece at a time** onto a special area of memory called the **stack**
+- This is like stacking dishes - last in, first out (LIFO)
+- The OS accesses information by taking it off the stack
+- Takes pieces in reverse order they were added
 
-**2. One-to-One:**
-- One user thread → One kernel thread
-- True concurrency
-- If one blocks, others continue
-- But: Creating user thread = kernel thread (expensive)
-- Limited by kernel thread limit
-- Example: Windows, Linux
+**Characteristics:**
+- **Push** parameters onto stack (by application)
+- **Pop** parameters from stack (by kernel)
+- Stack grows and shrinks automatically
 
-**3. Many-to-Many:**
-- M user threads → N kernel threads (M ≥ N)
-- Best of both worlds
-- Flexible and efficient
-- But: Complex to implement
-- Example: Older Solaris
+**Example:**
+\`\`\`
+# Assembly-like representation
+PUSH mode        # Push third parameter
+PUSH flags       # Push second parameter
+PUSH filename    # Push first parameter
+INT 0x80         # Make system call
+ADD SP, 12       # Clean up stack (3 params × 4 bytes)
+\`\`\`
 
-**4. Two-Level:**
-- Many-to-many with bound threads
-- Allows both multiplexing and binding
-- Very flexible
-- Example: IRIX, HP-UX
+**Advantages:**
+- ✅ **Unlimited information** - can push many parameters
+- ✅ **No limitations** on parameter count
+- ✅ Natural fit for function calls
+- ✅ Easy cleanup after call
 
-### Multicore Programming Challenges
+**Disadvantages:**
+- ❌ Requires stack manipulation
+- ❌ Slightly more overhead
+- ❌ Need to clean up stack after call
 
-**1. Identifying Tasks:**
-- Finding areas suitable for parallelization
-- Dividing work into concurrent tasks
+### Comparison of Parameter Passing Methods
 
-**2. Balance:**
-- Tasks should perform equal work
-- Avoid one thread doing all work
+| Method | Speed | Capacity | Complexity | Used For |
+|--------|-------|----------|------------|----------|
+| **Registers** | Fastest | Very Limited (few params) | Simplest | Simple syscalls, few parameters |
+| **Memory Block** | Medium | Unlimited | Medium | Complex structures, many parameters |
+| **Stack** | Medium | Unlimited | Medium | Variable parameters, function calls |
 
-**3. Data Splitting:**
-- Dividing data among tasks
-- Ensuring proper distribution
+### Method Selection Criteria
 
-**4. Data Dependency:**
-- Synchronization between tasks
-- Managing shared data access
+**Use Registers When:**
+- Few parameters (typically ≤ 6)
+- Simple data types (integers, pointers)
+- Performance is critical
+- Example: \`getpid()\`, \`exit(status)\`
 
-**5. Testing and Debugging:**
-- Race conditions
-- Deadlocks
-- Non-deterministic behavior
+**Use Memory Block When:**
+- Complex data structures
+- Many related parameters
+- Need to organize parameters
+- Example: File status structure, socket options
 
-### Types of Parallelism
+**Use Stack When:**
+- Variable number of parameters
+- Compatible with calling conventions
+- Need automatic cleanup
+- Example: \`printf()\` with variable arguments
 
-**Data Parallelism:**
-- Same operation on different data
-- Distribute data across cores
-- Each performs same task
-- Example: Image processing (each core processes part of image)
+### Real-World Example: Linux x86-64
 
-**Task Parallelism:**
-- Different operations on same/different data
-- Distribute tasks across cores
-- Each performs different task
-- Example: One thread for UI, one for computation, one for I/O
+On modern Linux systems (x86-64 architecture):
+- First **6 parameters** passed in registers: \`RDI, RSI, RDX, RCX, R8, R9\`
+- **Additional parameters** passed on the stack
+- **Syscall number** in \`RAX\` register
+- **Return value** in \`RAX\`
+
+\`\`\`c
+// open(filename, flags, mode)
+// Parameter 1 (filename): RDI
+// Parameter 2 (flags): RSI
+// Parameter 3 (mode): RDX
+// Syscall number: RAX = 2 (sys_open)
+\`\`\`
+
+### Security Considerations
+
+**Kernel Must Validate:**
+- All pointers point to valid user memory
+- No access to kernel memory
+- Buffer sizes are reasonable
+- Parameters are within valid ranges
+
+**Protection Mechanisms:**
+- Copy data from user space to kernel space
+- Check memory permissions
+- Prevent buffer overflows
+- Validate all inputs
+        `
+      },
+      {
+        id: 'interrupts',
+        title: 'Interrupts and Interrupt Handling',
+        icon: Zap,
+        content: `
+An interrupt in an operating system is a signal that prompts the OS to temporarily halt its current activities and execute a specific function, often referred to as an **interrupt handler** or **interrupt service routine (ISR)**.
+
+### What is an Interrupt?
+
+**Definition:**
+An interrupt is a hardware or software signal that alerts the CPU to stop its current task and handle an event that requires immediate attention.
+
+**Hardware Support:**
+- The CPU has a wire called the **interrupt-request line**
+- The CPU senses this line after executing every instruction
+- When a signal is detected, the CPU responds immediately
+
+### Interrupt Handling Process - I/O Example
+
+**Step 1: I/O Request Initiated**
+- The CPU issues an I/O command (e.g., read/write) to a device
+- Command issued via its **device driver** (part of the OS)
+- CPU tells the device what to do
+
+**Step 2: I/O Controller Takes Over**
+- The **I/O controller** (hardware) receives the command
+- Begins the data transfer between the device and memory
+- Works independently of the CPU
+
+**Step 3: CPU Continues Working**
+- While I/O is in progress, the CPU continues executing other instructions
+- **Non-blocking operation** - CPU doesn't wait
+- System remains productive
+
+**Step 4: I/O Operation Completes**
+- When the I/O finishes (or an error occurs)
+- The I/O controller sends an **interrupt signal** to the CPU
+- Notifies CPU that the operation is done
+
+**Step 5: Interrupt Detected**
+- The CPU detects the interrupt
+- Pauses current execution
+- **Saves the current task state** (context switching)
+- Prepares to handle the interrupt
+
+**Step 6: Interrupt Handler Invoked**
+- The OS calls the appropriate **interrupt handler**
+- Usually a small routine, part of the device driver
+- Specific to the device that caused the interrupt
+
+**Step 7: Interrupt Processed**
+- The handler processes the event:
+  - Read input data
+  - Check for errors
+  - Signal completion to waiting processes
+  - Update data structures
+
+**Step 8: Return to Previous Task**
+- Once complete, the CPU **restores the previous task's state**
+- Resumes execution as if it was never interrupted
+- Seamless continuation
+
+### Detailed Interrupt Handling Steps
+
+**1. Interrupt Request (IRQ)**
+- The hardware device sends an **interrupt request** to the CPU
+- Each device typically has a unique IRQ number
+- Example: IRQ 1 for keyboard, IRQ 3 for serial port
+
+**2. Acknowledgment**
+- The CPU **acknowledges** the interrupt
+- Temporarily pauses its current execution
+- Prepares to service the interrupt
+
+**3. Interrupt Vector**
+- The CPU uses an **interrupt vector** to locate the appropriate interrupt handler
+- The vector is essentially a **table of pointers** to interrupt service routines
+- Maps IRQ numbers to handler addresses
+- Located in a fixed memory location
+
+**4. Interrupt Service Routine (ISR)**
+- The CPU executes the ISR to handle the interrupt
+- ISR performs device-specific tasks:
+  - Reading data from a device
+  - Processing input
+  - Handling errors
+  - Updating status flags
+
+**5. Resume Execution**
+- After the ISR completes:
+  - CPU restores saved context
+  - Returns to interrupted task
+  - Continues as if nothing happened
+
+### Interrupt Flow Diagram
+
+\`\`\`
+Device Ready/Complete
+    ↓
+Send IRQ to CPU
+    ↓
+CPU Finishes Current Instruction
+    ↓
+CPU Acknowledges Interrupt
+    ↓
+Save Current Context (PC, Registers, Flags)
+    ↓
+Look Up Interrupt Vector
+    ↓
+Jump to ISR Address
+    ↓
+Execute Interrupt Service Routine
+    ↓
+Handle Device Event
+    ↓
+ISR Returns
+    ↓
+Restore Saved Context
+    ↓
+Resume Interrupted Task
+\`\`\`
+
+### Types of Interrupts
+
+**Hardware Interrupts:**
+- Generated by hardware devices
+- Examples:
+  - Keyboard press
+  - Mouse movement
+  - Disk read complete
+  - Timer tick
+  - Network packet arrival
+
+**Software Interrupts:**
+- Generated by programs
+- Also called **traps** or **exceptions**
+- Examples:
+  - System calls (INT 0x80)
+  - Division by zero
+  - Page fault
+  - Illegal instruction
+
+**Maskable vs Non-Maskable:**
+
+**Maskable Interrupts:**
+- Can be ignored (masked) by the CPU
+- Used for routine events
+- Examples: keyboard, mouse
+
+**Non-Maskable Interrupts (NMI):**
+- Cannot be ignored
+- Used for critical events
+- Examples: hardware failure, power failure
+
+### Interrupt Priority
+
+**Priority Levels:**
+- Different interrupts have different priorities
+- Higher priority interrupts can interrupt lower priority ISRs
+- Critical events handled first
+
+**Priority Order (Typical):**
+1. **Machine Check** (hardware failure) - Highest
+2. **Timer** (system clock)
+3. **Disk I/O**
+4. **Network**
+5. **Keyboard/Mouse** - Lowest
+
+### Interrupt Context Switching
+
+**What Gets Saved:**
+- **Program Counter (PC)** - where to resume
+- **Processor Status Word (PSW)** - flags and mode
+- **CPU Registers** - all general-purpose registers
+- **Stack Pointer** - current stack location
+
+**Where It's Saved:**
+- Usually on the kernel stack
+- Some architectures use special registers
+- Must be saved quickly and efficiently
+
+### Benefits of Interrupts
+
+**Efficiency:**
+- CPU doesn't waste time polling devices
+- Can work on other tasks while waiting for I/O
+- Better resource utilization
+
+**Responsiveness:**
+- Immediate response to events
+- Critical events handled promptly
+- Real-time capabilities
+
+**Simplified I/O:**
+- Devices signal when ready
+- No need for continuous checking
+- Cleaner program structure
+
+### Challenges with Interrupts
+
+**Race Conditions:**
+- Interrupts can occur at any time
+- Need synchronization mechanisms
+- Critical sections must be protected
+
+**Interrupt Storms:**
+- Too many interrupts can overwhelm CPU
+- Need interrupt coalescing
+- Rate limiting may be necessary
+
+**Latency:**
+- Time to respond to interrupt
+- Critical for real-time systems
+- Must minimize ISR execution time
+
+### Interrupt Handling Best Practices
+
+**Keep ISRs Short:**
+- Do minimal work in ISR
+- Defer complex processing
+- Return quickly to avoid blocking other interrupts
+
+**Top Half / Bottom Half:**
+- **Top Half**: ISR - acknowledge interrupt, minimal processing
+- **Bottom Half**: Deferred work - complex processing done later
+
+**Disable Interrupts Carefully:**
+- Only when absolutely necessary
+- For shortest time possible
+- Can cause system unresponsiveness
         `
       }
     ]
